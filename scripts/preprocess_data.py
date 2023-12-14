@@ -2,11 +2,16 @@ import argparse
 from batch_processing import Batch
 import sys
 # from gyraudio import root_dir
+from gyraudio.io.audio import load_raw_audio
 from pathlib import Path
+import logging
 
 
 def data_processing(input_file: Path, output_dir: Path, args):
-    print(input_file)
+    rate, sig = load_raw_audio(input_file.with_suffix(".WAV"))
+    channels = sig.shape[1]
+    logging.info(f"Sampling rate {rate/1e3}kHz, length {sig.shape[0]/rate:.1f}, {channels} audio channels")
+
     pass
 
 
