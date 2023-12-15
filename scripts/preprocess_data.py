@@ -47,9 +47,11 @@ def data_processing(input_file: Path, output_dir: Path, args):
         logging.info(f"Skipping {input_file.name}")
         data_samples = Dump.load_pickle(preprocessed_file)
     else:
-        rate, sig = load_raw_audio(input_file.with_suffix(".WAV"))
-        # offset = int((sig[:,0]==0).sum())
-        # sig = sig[offset:]
+        try:
+            rate, sig = load_raw_audio(input_file.with_suffix(".WAV"))
+        except Exception as e:
+            logging.error(f"Error loading audio file {input_file}: {e}")
+            return None
         channels = sig.shape[1]
         logging.info(f"Sampling rate {rate/1e3}kHz, length {sig.shape[0]/rate:.1f}, {channels} audio channels")
         gyro, accl = get_imu_data(input_file.with_suffix(".MP4"))
@@ -60,16 +62,15 @@ def data_processing(input_file: Path, output_dir: Path, args):
             AUDIO: sig,
         }
         Dump.save_pickle(data_samples, preprocessed_file)
-
-    sanity_check_plot(
-        data_samples[AUDIO],
-        data_samples[GYRO],
-        data_samples[ACCL],
-        rate_audio=data_samples[AUDIO_RATE],
-        rate_gyro=200.,
-        rate_accl=200.
-    )
-    pass
+    if args.plot:
+        sanity_check_plot(
+            data_samples[AUDIO],
+            data_samples[GYRO],
+            data_samples[ACCL],
+            rate_audio=data_samples[AUDIO_RATE],
+            rate_gyro=200.,
+            rate_accl=200.
+        )
 
 
 def parse_command_line(batch: Batch) -> argparse.Namespace:
@@ -79,6 +80,8 @@ def parse_command_line(batch: Batch) -> argparse.Namespace:
                         help="Enable multiprocessing - Warning with GPU - use -j2")
     parser.add_argument("--override", action="store_true",
                         help="overwrite processed results")
+    parser.add_argument("-p", "--plot", action="store_true",
+                        help="plot curves")
     return batch.parse_args(parser)
 
 
