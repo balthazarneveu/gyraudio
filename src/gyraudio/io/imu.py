@@ -1,7 +1,8 @@
 from pathlib import Path
 import gpmf
 import numpy as np
-def extract_imu_blocks(stream):
+from gyraudio.properties import GYRO_KEY, ACCL_KEY
+def extract_imu_blocks(stream, key=GYRO_KEY):
     """ Extract imu data blocks from binary stream
 
     This is a generator on lists `KVLItem` objects. In
@@ -23,12 +24,13 @@ def extract_imu_blocks(stream):
         is_imu = False
         for elt in s.value:
             content.append(elt)
-            if elt.key == "GYRO":
+            if elt.key == key:
                 is_imu = True
         if is_imu:
             yield content
 
-def parse_imu_block(imu_block):
+
+def parse_imu_block(imu_block, key=GYRO_KEY):
     """Turn imu data blocks into `imuData` objects
 
     Parameters
@@ -45,11 +47,10 @@ def parse_imu_block(imu_block):
         s.key: s for s in imu_block
     }
 
-    gyro = block_dict["GYRO"].value * 1.0 / block_dict["SCAL"].value
-    # print(block_dict.keys())
+    imu_data = block_dict[key].value * 1.0 / block_dict["SCAL"].value
     return {
         "timestamp": block_dict["TSMP"],
-        "gyro": gyro,
+        key: imu_data,
     }
 
 
@@ -67,7 +68,9 @@ def get_imu_data(pth: Path) -> np.array:
         List of imuData objects holding the imu information of the file.
     """
     stream = gpmf.io.extract_gpmf_stream(pth)
-    imu_blocks = extract_imu_blocks(stream)
-    imu_data = list(map(parse_imu_block, imu_blocks))
-    gyro = np.vstack([np.array(imu["gyro"]) for imu in imu_data])
-    return gyro
+    imu_data_dict = {}
+    for key in [GYRO_KEY, ACCL_KEY]:
+        imu_blocks = extract_imu_blocks(stream, key=key)
+        imu_data = [parse_imu_block(imu_block, key=key) for imu_block in imu_blocks]
+        imu_data_dict[key] = np.vstack([np.array(imu[key]) for imu in imu_data])
+    return imu_data_dict[GYRO_KEY], imu_data_dict[ACCL_KEY]

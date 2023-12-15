@@ -1,3 +1,6 @@
 GYRO = "gyro"
+ACCL = "accelerometer"
 AUDIO = "audio"
 AUDIO_RATE = "audio_rate"
+GYRO_KEY = "GYRO"
+ACCL_KEY = "ACCL"
