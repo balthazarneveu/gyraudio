@@ -15,12 +15,12 @@ def sanity_check_plot(audio_signal, imu_data, rate_audio=48000, rate_imu=200):
     # Do a quick uniformization of the audio signal
     audio_signal = np.array(audio_signal).astype(np.float32)
     audio_signal /= np.fabs(audio_signal[rate_audio:-rate_audio]).max()
-    audio_signal *= 3.
+    audio_signal *= 6.
 
     import matplotlib.pyplot as plt
     timeline = np.arange(len(audio_signal))/rate_audio
     timeline_imu = np.arange(len(imu_data))/rate_imu
-    for idx in range(audio_signal.shape[1]):
+    for idx in range(min(2, audio_signal.shape[1])):
         plt.plot(timeline, audio_signal[:, idx], label=f"audio mic={idx}")
     for idx in range(imu_data.shape[1]):
         plt.plot(timeline_imu, imu_data[:, idx], label=f"gyro {'xyz'[idx]}")
