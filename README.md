@@ -1,10 +1,12 @@
 # Gyraudio
-A novel method for audio source separation.
+A novel idea for audio source separation:
+Exploiting IMU (**i**nertial **m**easurement **u**nits = gyroscope and accelerometer) data to help source separation. 
+
 Authors:
 - :star: Mathilde Dupouy
 - :star: Balthazar Neveu
 
-
+![multimodal_sanity_check](/report/figures/audio_and_gyro_walk.png)
 ## Setup
 ```bash
 git clone https://github.com/balthazarneveu/gyraudio
