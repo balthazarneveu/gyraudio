@@ -7,12 +7,19 @@ Authors:
 - :star: Balthazar Neveu
 
 ![multimodal_sanity_check](/report/figures/audio_and_gyro_walk.png)
+
+
+```bash
+python scripts/preprocess_data.py -i __data/GH013090.MP4 -o __out
+```
+
 ## Setup
 ```bash
 git clone https://github.com/balthazarneveu/gyraudio
 cd gyraudio
 pip install -e .
 ```
+
 
 ### Requirements
 - A few requirements so far: `batch_processing`, `matplotlib`, `PyYAML`, `scipy`

@@ -5,25 +5,35 @@ import sys
 from gyraudio.io.audio import load_raw_audio
 from gyraudio.io.imu import get_imu_data
 from gyraudio.io.dump import Dump
-from gyraudio.properties import GYRO, AUDIO, AUDIO_RATE
+from gyraudio.properties import GYRO, ACCL, AUDIO, AUDIO_RATE
 from pathlib import Path
 import logging
 import numpy as np
 
 
-def sanity_check_plot(audio_signal, imu_data, rate_audio=48000, rate_imu=200):
-    # Do a quick uniformization of the audio signal
+def sanity_check_plot(
+    audio_signal: np.ndarray, gyro_data: np.ndarray, accl_data: np.ndarray,
+    rate_audio: int = 48000, rate_gyro: int = 200, rate_accl: int = 200
+):
+    # Do a quick uniformization of the audio signal - Roughly mixing units just to roughly match scales
     audio_signal = np.array(audio_signal).astype(np.float32)
     audio_signal /= np.fabs(audio_signal[rate_audio:-rate_audio]).max()
     audio_signal *= 6.
+    accl_data /= 10.
 
     import matplotlib.pyplot as plt
     timeline = np.arange(len(audio_signal))/rate_audio
-    timeline_imu = np.arange(len(imu_data))/rate_imu
+    timeline_imu = np.arange(len(gyro_data))/rate_gyro
+    timeline_accl = np.arange(len(accl_data))/rate_accl
     for idx in range(min(2, audio_signal.shape[1])):
         plt.plot(timeline, audio_signal[:, idx], label=f"audio mic={idx}")
-    for idx in range(imu_data.shape[1]):
-        plt.plot(timeline_imu, imu_data[:, idx], label=f"gyro {'xyz'[idx]}")
+
+    for idx in range(gyro_data.shape[1]):
+        plt.plot(timeline_imu, gyro_data[:, idx], label=f"gyro {'xyz'[idx]}")
+    for idx in range(gyro_data.shape[1]):
+        plt.plot(timeline_accl, accl_data[:, idx], label=f"accelerometer {'xyz'[idx]}")
+    plt.title("Comparison of audio and imu data [No units]")
+    plt.grid()
     plt.legend()
     plt.show()
 
@@ -42,15 +52,23 @@ def data_processing(input_file: Path, output_dir: Path, args):
         # sig = sig[offset:]
         channels = sig.shape[1]
         logging.info(f"Sampling rate {rate/1e3}kHz, length {sig.shape[0]/rate:.1f}, {channels} audio channels")
-        gyro = get_imu_data(input_file.with_suffix(".MP4"))
+        gyro, accl = get_imu_data(input_file.with_suffix(".MP4"))
         data_samples = {
             GYRO: gyro,
+            ACCL: accl,
             AUDIO_RATE: rate,
             AUDIO: sig,
         }
         Dump.save_pickle(data_samples, preprocessed_file)
 
-    sanity_check_plot(data_samples[AUDIO], data_samples[GYRO], rate_audio=data_samples[AUDIO_RATE], rate_imu=200.)
+    sanity_check_plot(
+        data_samples[AUDIO],
+        data_samples[GYRO],
+        data_samples[ACCL],
+        rate_audio=data_samples[AUDIO_RATE],
+        rate_gyro=200.,
+        rate_accl=200.
+    )
     pass
 
 
