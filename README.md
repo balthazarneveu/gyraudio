@@ -1,17 +1,11 @@
-# Gyraudio
-A novel idea for audio source separation:
-Exploiting IMU (**i**nertial **m**easurement **u**nits = gyroscope and accelerometer) data to help source separation. 
-
+# Audio source separation
 Authors:
-- :star: Mathilde Dupouy
-- :star: Balthazar Neveu
+- :star: [Mathilde Dupouy](https://github.com/MathildeDupouy)
+- :star: [Balthazar Neveu](https://github.com/balthazarneveu)
 
-![multimodal_sanity_check](/report/figures/audio_and_gyro_walk.png)
+Context: Project [MVA - deep and signal](https://www.master-mva.com/cours/apprentissage-profond-et-traitement-du-signal-introduction-et-applications-industrielles/), class given by Thomas Courtat.
 
-
-```bash
-python scripts/preprocess_data.py -i __data/GH013090.MP4 -o __out
-```
+# Code
 
 ## Setup
 ```bash
@@ -21,8 +15,24 @@ pip install -e .
 ```
 
 
+# :speaker: Audio separation
+
+# :test_tube: Gyraudio *[tentative]*
+ a novel idea for audio source separation:
+Exploiting IMU (**i**nertial **m**easurement **u**nits = gyroscope and accelerometer) data to help source separation. 
+
+
+![multimodal_sanity_check](/report/figures/audio_and_gyro_walk.png)
+
+
+```bash
+python scripts/preprocess_data.py -i __data/GH013090.MP4 -o __out
+```
+
+
 ### Requirements
 - A few requirements so far: `batch_processing`, `matplotlib`, `PyYAML`, `scipy`
+*Optional `interactive_pipe`*
 
 - If you need to process new gopro files, you'll need the [GPMF](https://github.com/alexis-mignon/pygpmf) pyton library
 ```
@@ -30,6 +40,3 @@ pip install gpmf
 pip uninstall python-ffmpeg
 conda install -c conda-forge ffmpeg-python
 ```
-
-
-- *Optional `interactive_pipe`*
