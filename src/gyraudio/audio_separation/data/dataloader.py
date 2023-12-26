@@ -1,6 +1,5 @@
 from torch.utils.data import DataLoader
 from gyraudio.audio_separation.data.mixed import MixedAudioDataset
-from gyraudio.audio_separation.data.single import SingleAudioDataset
 from typing import Optional, List
 from gyraudio.audio_separation.properties import (
     DATA_PATH, AUGMENTATION, SNR_FILTER, SHUFFLE, BATCH_SIZE, TRAIN, VALID, TEST
