@@ -31,6 +31,7 @@ def get_config_dataloader(
         mode: str = TRAIN,
         shuffle: Optional[bool] = None,
         batch_size: Optional[int] = 16,
+        snr_filter: Optional[List[float]] = None,
         augmentation: List[str] = []):
     audio_folder = audio_root/mode
     assert mode in [TRAIN, VALID, TEST]
@@ -42,7 +43,7 @@ def get_config_dataloader(
         DATA_PATH: audio_folder,
         SHUFFLE: shuffle if shuffle is not None else (True if mode == TRAIN else False),
         AUGMENTATION: augmentation_dict,
-        SNR_FILTER: None,
+        SNR_FILTER: snr_filter,
         BATCH_SIZE: batch_size
     }
     return config
