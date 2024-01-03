@@ -1,6 +1,8 @@
 from gyraudio.default_locations import MIXED_AUDIO_ROOT
 from gyraudio.audio_separation.properties import (
-    TRAIN, TEST, VALID, NAME, EPOCHS, LEARNING_RATE, OPTIMIZER, BATCH_SIZE, NB_PARAMS, ANNOTATIONS
+    TRAIN, TEST, VALID, NAME, EPOCHS, LEARNING_RATE,
+    OPTIMIZER, BATCH_SIZE, NB_PARAMS, ANNOTATIONS,
+    SHORT_NAME
 )
 from gyraudio.audio_separation.data import get_dataloader, get_config_dataloader
 import torch
@@ -9,10 +11,28 @@ from gyraudio.audio_separation.architecture.flat_conv import FlatConvolutional
 
 
 def count_parameters(model: torch.nn.Module) -> int:
+    """Count number of trainable parameters
+
+    Args:
+        model (torch.nn.Module): Pytorch model
+
+    Returns:
+        int: Number of trainable elements
+    """
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
 def get_experience(exp_major: int, exp_minor: int = 0) -> Tuple[str, torch.nn.Module, dict, dict]:
+    """Get all experience details
+
+    Args:
+        exp_major (int): Major experience number
+        exp_minor (int, optional): Used for HP search. Defaults to 0.
+
+
+    Returns:
+        Tuple[str, torch.nn.Module, dict, dict]: short_name, model, config, dataloaders
+    """
     model = None
     config = {}
     dataloader_name = "premix"
@@ -30,7 +50,8 @@ def get_experience(exp_major: int, exp_minor: int = 0) -> Tuple[str, torch.nn.Mo
         model = FlatConvolutional()
         config[NAME] = "Flat Convolutional"
         config[ANNOTATIONS] = "Baseline"
-
+    else:
+        raise NotImplementedError(f"Unknown experience {exp_major}.{exp_minor}")
     # POST PROCESSING
     config[NB_PARAMS] = count_parameters(model)
     config[BATCH_SIZE] = {
@@ -58,7 +79,9 @@ def get_experience(exp_major: int, exp_minor: int = 0) -> Tuple[str, torch.nn.Mo
     else:
         raise NotImplementedError(f"Unknown dataloader {dataloader_name}")
     assert config[NAME] is not None
+
     short_name = f"{exp_major:04d}_{exp_minor:04d}"
+    config[SHORT_NAME] = short_name
     return short_name, model, config, dataloaders
 
 
@@ -69,4 +92,5 @@ if __name__ == "__main__":
 
     for exp in args.experiments:
         short_name, model, config, dl = get_experience(exp)
+        print(short_name)
         print(config)
