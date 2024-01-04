@@ -31,7 +31,10 @@ Each experiment is defined by:
 `python scripts/audio_separation_train.py -e 1`
 `python scripts/audio_separation_infer.py -e 1`
 
-### [:bar_chart: Experiment tracking](https://wandb.ai/balthazarneveu/audio-sep)
+### :engine: Batch processing
+Process specific audio files
+`python scripts/audio_separation_batch.py -i __data_source_separation/source_separation/test/0000 -o __output_audio -e 1`
+### :bar_chart: [Experiment tracking](https://wandb.ai/balthazarneveu/audio-sep)
 
 ### Evaluation
 Run inference/evaluation from a checkpoint
