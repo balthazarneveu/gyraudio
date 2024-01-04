@@ -36,7 +36,10 @@ def training_loop(model: torch.nn.Module, config: dict, dl, device: str = "cuda"
     if optim_name == "adam":
         optimizer = torch.optim.Adam(model.parameters(), **optim_params)
     max_steps = config.get(MAX_STEPS_PER_EPOCH, None)
+
     for epoch in range(config[EPOCHS]):
+        # Training loop
+        # -----------------------------------------------------------
         model.to(device)
         training_loss = 0.
         for step_index, (batch_mix, batch_signal, batch_noise) in tqdm(
@@ -51,7 +54,8 @@ def training_loop(model: torch.nn.Module, config: dict, dl, device: str = "cuda"
             optimizer.step()
             training_loss += loss.item()
         training_loss = training_loss/len(dl[TRAIN])
-
+        # Validation loop
+        # -----------------------------------------------------------
         model.eval()
         with torch.no_grad():
             val_loss = 0.

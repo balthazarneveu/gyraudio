@@ -4,8 +4,9 @@ from gyraudio.audio_separation.properties import (
 )
 from gyraudio.audio_separation.experiment_tracking.experiments_decorator import (
     registered_experiment, REGISTERED_EXPERIMENTS_LIST
-    
+
 )
+
 
 @registered_experiment(major=0)
 def exp_unit_test(config, model: bool = None, minor=None):
@@ -17,6 +18,7 @@ def exp_unit_test(config, model: bool = None, minor=None):
     if model is None:
         model = FlatConvolutional()
     return config, model
+
 
 @registered_experiment(major=1)
 def exp_1(config, model: bool = None, minor=None):
