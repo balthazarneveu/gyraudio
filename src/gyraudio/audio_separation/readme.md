@@ -28,6 +28,9 @@ Each experiment is defined by:
 - Model (architecture, sizes)
 - Optimizer configuration (hyperparameters)
 
+`python scripts/audio_separation_train.py -e 1`
+`python scripts/audio_separation_infer.py -e 1`
+
 ### [:bar_chart: Experiment tracking](https://wandb.ai/balthazarneveu/audio-sep)
 
 ### Evaluation
