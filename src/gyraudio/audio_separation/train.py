@@ -1,8 +1,12 @@
 from gyraudio.audio_separation.experiment_tracking.experiments import get_experience
 from gyraudio.audio_separation.parser import shared_parser
 from gyraudio.audio_separation.properties import (
-    TRAIN, TEST, EPOCHS, OPTIMIZER, NAME, MAX_STEPS_PER_EPOCH
+    TRAIN, TEST, EPOCHS, OPTIMIZER, NAME, MAX_STEPS_PER_EPOCH, LOSS, LOSS_L2
 )
+from gyraudio.default_locations import EXPERIMENT_STORAGE_ROOT
+from gyraudio.audio_separation.experiment_tracking.storage import get_output_folder
+from pathlib import Path
+from gyraudio.io.dump import Dump
 import sys
 import torch
 from tqdm import tqdm
@@ -11,8 +15,14 @@ import wandb
 import logging
 
 
-def launch_training(exp: int, wandb_flag: bool = True, device: str = "cuda"):
+def launch_training(exp: int, wandb_flag: bool = True, device: str = "cuda", save_dir: Path = None, override=False):
+
     short_name, model, config, dl = get_experience(exp)
+    exists, output_folder = get_output_folder(config, root_dir=save_dir, override=override)
+    if not exists:
+        logging.info(f"Skipping experiment {short_name}")
+    else:
+        logging.info(f"Experiment {short_name} saved in {output_folder}")
     print(short_name)
     print(config)
     logging.info(f"Starting training for {short_name}")
@@ -22,14 +32,15 @@ def launch_training(exp: int, wandb_flag: bool = True, device: str = "cuda"):
             project="audio-sep",
             name=short_name,
             tags=["debug"],
-            config=config,
+            config=config
         )
-    training_loop(model, config, dl, wandb_flag=wandb_flag, device=device)
+    training_loop(model, config, dl, wandb_flag=wandb_flag, device=device, exp_dir=output_folder)
     if wandb_flag:
         wandb.finish()
 
 
-def training_loop(model: torch.nn.Module, config: dict, dl, device: str = "cuda", wandb_flag: bool = False):
+def training_loop(model: torch.nn.Module, config: dict, dl, device: str = "cuda", wandb_flag: bool = False,
+                  exp_dir: Path = None):
     optim_params = deepcopy(config[OPTIMIZER])
     optim_name = optim_params[NAME]
     optim_params.pop(NAME)
@@ -41,6 +52,7 @@ def training_loop(model: torch.nn.Module, config: dict, dl, device: str = "cuda"
         # Training loop
         # -----------------------------------------------------------
         model.to(device)
+        metrics = {TRAIN: {}, TEST: {}}
         training_loss = 0.
         for step_index, (batch_mix, batch_signal, batch_noise) in tqdm(
                 enumerate(dl[TRAIN]), desc=f"Epoch {epoch}", total=len(dl[TRAIN])):
@@ -58,7 +70,7 @@ def training_loop(model: torch.nn.Module, config: dict, dl, device: str = "cuda"
         # -----------------------------------------------------------
         model.eval()
         with torch.no_grad():
-            val_loss = 0.
+            test_loss = 0.
             for step_index, (batch_mix, batch_signal, batch_noise) in tqdm(
                     enumerate(dl[TEST]), desc=f"Epoch {epoch}", total=len(dl[TEST])):
                 if max_steps is not None and step_index >= max_steps:
@@ -67,19 +79,28 @@ def training_loop(model: torch.nn.Module, config: dict, dl, device: str = "cuda"
                     device), batch_signal.to(device), batch_noise.to(device)
                 batch_output_signal, _batch_output_noise = model(batch_mix)
                 loss = torch.nn.functional.mse_loss(batch_output_signal, batch_signal)
-                val_loss += loss.item()
-        val_loss = val_loss/len(dl[TEST])
-        logging.info(f"{training_loss:.3e} | {val_loss:.3e}")
+                test_loss += loss.item()
+        test_loss = test_loss/len(dl[TEST])
+        logging.info(f"{training_loss:.3e} | {test_loss:.3e}")
         if wandb_flag:
-            wandb.log({"train/loss": training_loss, "validation/loss": val_loss})
+            wandb.log({"train/loss": training_loss, "test/loss": test_loss})
+        metrics[TRAIN][LOSS_L2] = training_loss
+        metrics[TEST][LOSS_L2] = test_loss
+        Dump.save_json(metrics, exp_dir/f"metrics_{epoch:04d}.json")
+        torch.save(model.state_dict(), exp_dir/f"model_{epoch:04d}.pt")
 
 
 def main(argv):
     parser_def = shared_parser()
     parser_def.add_argument("-nowb", "--no-wandb", action="store_true")
+    parser_def.add_argument("-o", "--output-dir", type=str, default=EXPERIMENT_STORAGE_ROOT)
+    parser_def.add_argument("-f", "--force", action="store_true", help="Override existing experiment")
     args = parser_def.parse_args(argv)
     for exp in args.experiments:
-        launch_training(exp, wandb_flag=not args.no_wandb)
+        launch_training(
+            exp, wandb_flag=not args.no_wandb, save_dir=Path(args.output_dir),
+            override=args.force
+        )
 
 
 if __name__ == "__main__":

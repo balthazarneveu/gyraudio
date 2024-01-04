@@ -3,7 +3,6 @@ TRAIN = "train"
 VALID = "validation"
 TEST = "test"
 
-
 # Dataset properties (keys)
 DATA_PATH = "path"
 BATCH_SIZE = "batch_size"
@@ -25,3 +24,8 @@ NAME = "name"
 ANNOTATIONS = "annotations"
 NB_PARAMS = "nb_params"
 SHORT_NAME = "short_name"
+
+
+# Loss
+LOSS = "loss"
+LOSS_L2 = "MSE"
