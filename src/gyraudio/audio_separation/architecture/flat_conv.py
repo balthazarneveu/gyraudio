@@ -35,11 +35,11 @@ class FlatConvolutional(SeparationModel):
             self.conv4,
             self.relu
         )
-        self.demux = [
+        self.demux = torch.nn.Sequential(*(
             torch.nn.Conv1d(h_dim, h_dim//2, 1),  # conv1x1
-            torch.relu,
+            torch.nn.ReLU(),
             torch.nn.Conv1d(h_dim//2, ch_out, 1),  # conv1x1
-        ]
+        ))
 
     def forward(self, mixed_sig_in: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """Perform feature extraction followed by classifier head
