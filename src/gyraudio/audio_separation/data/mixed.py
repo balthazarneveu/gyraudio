@@ -21,15 +21,17 @@ class MixedAudioDataset(AudioDataset):
             logging.info(f"Available SNR {set(snr_list)}")
             print(f"Available SNR {set(snr_list)}")
             print("Filtered", len(self.file_list), self.snr_filter)
+        self.sampling_rate = None
 
     def __getitem__(self, idx: int) -> Tuple[Tensor, Tensor, Tensor]:
         mixed_audio_path, signal_path, noise_path = self.file_list[idx]
         assert mixed_audio_path.exists()
         assert signal_path.exists()
         assert noise_path.exists()
-        mixed_audio_signal, _sampling_rate = torchaudio.load(str(mixed_audio_path))
-        clean_audio_signal, _sampling_rate = torchaudio.load(str(signal_path))
-        noise_audio_signal, _sampling_rate = torchaudio.load(str(noise_path))
+        mixed_audio_signal, sampling_rate = torchaudio.load(str(mixed_audio_path))
+        clean_audio_signal, sampling_rate = torchaudio.load(str(signal_path))
+        noise_audio_signal, sampling_rate = torchaudio.load(str(noise_path))
+        self.sampling_rate = sampling_rate
         if self.debug:
             logging.debug(f"{mixed_audio_signal.shape}")
             logging.debug(f"{clean_audio_signal.shape}")
