@@ -29,3 +29,8 @@ SHORT_NAME = "short_name"
 # Loss
 LOSS = "loss"
 LOSS_L2 = "MSE"
+
+# Checkpoint
+MODEL = "model"
+CURRENT_EPOCH = "current_epoch"
+CONFIGURATION = "configuration"

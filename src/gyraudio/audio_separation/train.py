@@ -4,7 +4,8 @@ from gyraudio.audio_separation.properties import (
     TRAIN, TEST, EPOCHS, OPTIMIZER, NAME, MAX_STEPS_PER_EPOCH, LOSS, LOSS_L2
 )
 from gyraudio.default_locations import EXPERIMENT_STORAGE_ROOT
-from gyraudio.audio_separation.experiment_tracking.storage import get_output_folder
+from gyraudio.audio_separation.experiment_tracking.storage import get_output_folder, save_checkpoint
+# from gyraudio.audio_separation.experiment_tracking.storage import load_checkpoint
 from pathlib import Path
 from gyraudio.io.dump import Dump
 import sys
@@ -20,9 +21,11 @@ def launch_training(exp: int, wandb_flag: bool = True, device: str = "cuda", sav
     short_name, model, config, dl = get_experience(exp)
     exists, output_folder = get_output_folder(config, root_dir=save_dir, override=override)
     if not exists:
-        logging.info(f"Skipping experiment {short_name}")
+        logging.warning(f"Skipping experiment {short_name}")
+        return False
     else:
         logging.info(f"Experiment {short_name} saved in {output_folder}")
+
     print(short_name)
     print(config)
     logging.info(f"Starting training for {short_name}")
@@ -37,6 +40,7 @@ def launch_training(exp: int, wandb_flag: bool = True, device: str = "cuda", sav
     training_loop(model, config, dl, wandb_flag=wandb_flag, device=device, exp_dir=output_folder)
     if wandb_flag:
         wandb.finish()
+    return True
 
 
 def training_loop(model: torch.nn.Module, config: dict, dl, device: str = "cuda", wandb_flag: bool = False,
@@ -49,9 +53,11 @@ def training_loop(model: torch.nn.Module, config: dict, dl, device: str = "cuda"
     max_steps = config.get(MAX_STEPS_PER_EPOCH, None)
 
     for epoch in range(config[EPOCHS]):
+        model.to(device)
+        # model, optimizer, epoch, config = load_checkpoint(model, exp_dir, optimizer, epoch=epoch)
         # Training loop
         # -----------------------------------------------------------
-        model.to(device)
+
         metrics = {TRAIN: {}, TEST: {}}
         training_loss = 0.
         for step_index, (batch_mix, batch_signal, batch_noise) in tqdm(
@@ -87,7 +93,8 @@ def training_loop(model: torch.nn.Module, config: dict, dl, device: str = "cuda"
         metrics[TRAIN][LOSS_L2] = training_loss
         metrics[TEST][LOSS_L2] = test_loss
         Dump.save_json(metrics, exp_dir/f"metrics_{epoch:04d}.json")
-        torch.save(model.state_dict(), exp_dir/f"model_{epoch:04d}.pt")
+        # torch.save(model.state_dict(), exp_dir/f"model_{epoch:04d}.pt")
+        save_checkpoint(model, exp_dir, optimizer, config=config, epoch=epoch)
 
 
 def main(argv):
@@ -95,11 +102,15 @@ def main(argv):
     parser_def.add_argument("-nowb", "--no-wandb", action="store_true")
     parser_def.add_argument("-o", "--output-dir", type=str, default=EXPERIMENT_STORAGE_ROOT)
     parser_def.add_argument("-f", "--force", action="store_true", help="Override existing experiment")
+    default_device = "cuda" if torch.cuda.is_available() else "cpu"
+    parser_def.add_argument("-d", "--device", type=str, default=default_device,
+                            help="Training device", choices=["cpu", "cuda"])
     args = parser_def.parse_args(argv)
     for exp in args.experiments:
         launch_training(
             exp, wandb_flag=not args.no_wandb, save_dir=Path(args.output_dir),
-            override=args.force
+            override=args.force,
+            device=args.device
         )
 
 
