@@ -1,7 +1,7 @@
 from gyraudio.default_locations import MIXED_AUDIO_ROOT
 from gyraudio.audio_separation.properties import (
     TRAIN, TEST, VALID, NAME, EPOCHS, LEARNING_RATE,
-    OPTIMIZER, BATCH_SIZE, NB_PARAMS, ANNOTATIONS,
+    OPTIMIZER, BATCH_SIZE,
     SHORT_NAME
 )
 from gyraudio.audio_separation.data import get_dataloader, get_config_dataloader

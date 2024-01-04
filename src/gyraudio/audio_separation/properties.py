@@ -17,6 +17,7 @@ OPTIMIZER = "optimizer"
 LEARNING_RATE = "lr"
 EPOCHS = "epochs"
 BATCH_SIZE = "batch_size"
+MAX_STEPS_PER_EPOCH = "max_steps_per_epoch"
 
 
 # Properties for the model
