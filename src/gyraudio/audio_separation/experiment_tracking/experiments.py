@@ -5,24 +5,12 @@ from gyraudio.audio_separation.properties import (
     SHORT_NAME
 )
 from gyraudio.audio_separation.data import get_dataloader, get_config_dataloader
+from gyraudio.audio_separation.experiment_tracking.experiments_definition import get_experiment_generator
 import torch
 from typing import Tuple
-from gyraudio.audio_separation.architecture.flat_conv import FlatConvolutional
 
 
-def count_parameters(model: torch.nn.Module) -> int:
-    """Count number of trainable parameters
-
-    Args:
-        model (torch.nn.Module): Pytorch model
-
-    Returns:
-        int: Number of trainable elements
-    """
-    return sum(p.numel() for p in model.parameters() if p.requires_grad)
-
-
-def get_experience(exp_major: int, exp_minor: int = 0) -> Tuple[str, torch.nn.Module, dict, dict]:
+def get_experience(exp_major: int, exp_minor: int = 0, dry_run=False) -> Tuple[str, torch.nn.Module, dict, dict]:
     """Get all experience details
 
     Args:
@@ -45,15 +33,9 @@ def get_experience(exp_major: int, exp_minor: int = 0) -> Tuple[str, torch.nn.Mo
         },
         EPOCHS: 10,
     }
-    # EXPERIENCE DEFINITIONS
-    if exp_major == 0:
-        model = FlatConvolutional()
-        config[NAME] = "Flat Convolutional"
-        config[ANNOTATIONS] = "Baseline"
-    else:
-        raise NotImplementedError(f"Unknown experience {exp_major}.{exp_minor}")
+
+    model, config = get_experiment_generator(exp_major=exp_major)(config, no_model=dry_run, minor=exp_minor)
     # POST PROCESSING
-    config[NB_PARAMS] = count_parameters(model)
     config[BATCH_SIZE] = {
         TRAIN: batch_sizes[0],
         TEST:  batch_sizes[1],
