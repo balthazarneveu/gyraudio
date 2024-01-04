@@ -98,11 +98,13 @@ def training_loop(model: torch.nn.Module, config: dict, dl, device: str = "cuda"
 
 
 def main(argv):
-    parser_def = shared_parser()
+    default_device = "cuda" if torch.cuda.is_available() else "cpu"
+    parser_def = shared_parser(help="Launch training \nCheck results at: https://wandb.ai/balthazarneveu/audio-sep"
+                               + ("\n<<<Cuda available>>>" if default_device == "cuda" else ""))
     parser_def.add_argument("-nowb", "--no-wandb", action="store_true")
     parser_def.add_argument("-o", "--output-dir", type=str, default=EXPERIMENT_STORAGE_ROOT)
     parser_def.add_argument("-f", "--force", action="store_true", help="Override existing experiment")
-    default_device = "cuda" if torch.cuda.is_available() else "cpu"
+    
     parser_def.add_argument("-d", "--device", type=str, default=default_device,
                             help="Training device", choices=["cpu", "cuda"])
     args = parser_def.parse_args(argv)

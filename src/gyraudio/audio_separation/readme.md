@@ -20,12 +20,15 @@ SNR: -4 - TRAIN SIZE 516 TEST SIZE 206
 SNR: -3 - TRAIN SIZE 450 TEST SIZE 207
 ```
 
-### Training
-Keep track of experiments by an integer id.
+### :chart_with_downwards_trend: Training
+:id: Keep track of experiments by an integer id. 
+
 Each experiment is defined by:
 - Dataloader configuration (data, augmentations)
 - Model (architecture, sizes)
 - Optimizer configuration (hyperparameters)
+
+### [:bar_chart: Experiment tracking](https://wandb.ai/balthazarneveu/audio-sep)
 
 ### Evaluation
 Run inference/evaluation from a checkpoint

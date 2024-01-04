@@ -22,6 +22,7 @@ def exp_unit_test(config, model: bool = None, minor=None):
 
 @registered_experiment(major=1)
 def exp_1(config, model: bool = None, minor=None):
+    config[EPOCHS] = 50
     config[NAME] = "Flat Convolutional"
     config[ANNOTATIONS] = "Baseline"
     if model is None:
