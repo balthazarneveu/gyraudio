@@ -11,7 +11,7 @@ import wandb
 import logging
 
 
-def launch_training(exp: int, wandb_flag: bool = True):
+def launch_training(exp: int, wandb_flag: bool = True, device: str = "cuda"):
     short_name, model, config, dl = get_experience(exp)
     print(short_name)
     print(config)
@@ -22,9 +22,9 @@ def launch_training(exp: int, wandb_flag: bool = True):
             project="audio-sep",
             name=short_name,
             tags=["debug"],
-            config=config
+            config=config,
         )
-    training_loop(model, config, dl, wandb_flag=wandb_flag)
+    training_loop(model, config, dl, wandb_flag=wandb_flag, device=device)
     if wandb_flag:
         wandb.finish()
 
