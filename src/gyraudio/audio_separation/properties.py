@@ -34,3 +34,9 @@ LOSS_L2 = "MSE"
 MODEL = "model"
 CURRENT_EPOCH = "current_epoch"
 CONFIGURATION = "configuration"
+
+
+# Signal names
+CLEAN = "clean"
+NOISY = "noise"
+MIXED = "mixed"
