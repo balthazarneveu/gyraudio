@@ -19,7 +19,6 @@ def parse_command_line(batch: Batch) -> argparse.Namespace:
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("-e",  "--experiments", type=int, nargs="+", required=True,
                         help="Experiment ids to be inferred sequentially")
-    parser.add_argument("-p", "--interactive", action="store_true", help="Play = Interactive mode")
     parser.add_argument("-m", "--model-root", type=str, default=EXPERIMENT_STORAGE_ROOT)
     parser.add_argument("-d", "--device", type=str, default=default_device)
     return batch.parse_args(parser)
@@ -40,8 +39,8 @@ def audio_separation_processing(
     with torch.no_grad():
         for config, model in zip(config_list, model_list):
             short_name = config.get(SHORT_NAME, "unknown")
-            predicted_signal, predicted_noise = model(mixed_signal)
-            save_audio_tensor(outp(output, f"_prediction_{short_name}"), predicted_signal, sampling_rate)
+            predicted_signal, predicted_noise = model(mixed_signal.unsqueeze(0))
+            save_audio_tensor(outp(output, f"_prediction_{short_name}"), predicted_signal.squeeze(0), sampling_rate)
     save_audio_tensor(outp(output, "_mix"), mixed_signal, sampling_rate)
 
 
