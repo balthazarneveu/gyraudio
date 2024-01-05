@@ -1,5 +1,5 @@
 import kaggle
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import json
 from __kaggle_login import kaggle_users
 import argparse
@@ -71,7 +71,7 @@ def main(argv):
     kernel_path.mkdir(exist_ok=True, parents=True)
     branch = args.branch
     config = {
-        "id": str(Path(f"{kaggle_user['username']}")/nb_id),
+        "id": str(PurePosixPath(f"{kaggle_user['username']}")/nb_id),
         "title": nb_id.lower(),
         "code_file": f"{nb_id}.ipynb",
         "language": "python",
