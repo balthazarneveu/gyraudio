@@ -5,7 +5,7 @@ from pathlib import Path
 from gyraudio.audio_separation.experiment_tracking.experiments import get_experience
 from gyraudio.audio_separation.experiment_tracking.storage import get_output_folder
 from gyraudio.default_locations import EXPERIMENT_STORAGE_ROOT
-from gyraudio.audio_separation.properties import SHORT_NAME, CLEAN, NOISY, MIXED, ANNOTATIONS
+from gyraudio.audio_separation.properties import SHORT_NAME, CLEAN, NOISY, MIXED, PREDICTED, ANNOTATIONS
 import torch
 from gyraudio.audio_separation.experiment_tracking.storage import load_checkpoint
 from gyraudio.io.audio import load_audio_tensor, save_audio_tensor
@@ -14,6 +14,9 @@ import numpy as np
 import logging
 from interactive_pipe.data_objects.curves import Curve, SingleCurve
 from interactive_pipe import interactive_pipeline, interactive, KeyboardControl
+from interactive_pipe.headless.pipeline import HeadlessPipeline
+from interactive_pipe.graphical.qt_gui import InteractivePipeQT
+from interactive_pipe import Control
 
 
 def parse_command_line(batch: Batch) -> argparse.Namespace:
@@ -68,10 +71,11 @@ def audio_loading(
 @interactive(
     idx=KeyboardControl(value_default=0, value_range=[0, 1000], modulo=True, keyup="right", keydown="left")
 )
-def signal_selector(signals, idx=0):
+def signal_selector(signals, idx=0, global_params={}):
     signal = signals[idx % len(signals)]
     if "buffers" not in signal:
         load_buffers(signal)
+    global_params["sampling_rate"] = signal["sampling_rate"]
     return signal
 
 
@@ -97,12 +101,14 @@ def audio_sep_inference(mixed, models, configs, model: int = 0):
     annotations = config.get(ANNOTATIONS, "")
     predicted_signal, predicted_noise = selected_model(mixed.to(device).unsqueeze(0))
     predicted_signal = predicted_signal.squeeze(0)
-    pred = SingleCurve(y=5*predicted_signal[0, :].detach().cpu().numpy(),
-                       style="b-", label=f"predicted_{short_name} {annotations}")
-    return pred
+    pred_curve = SingleCurve(y=predicted_signal[0, :].detach().cpu().numpy(),
+                             style="b-", label=f"predicted_{short_name} {annotations}")
+    return predicted_signal, pred_curve
 
 
 def visualize_audio(signal: dict, mixed_signal, pred):
+    """Create curves
+    """
     dec = 200
     clean = SingleCurve(y=signal["buffers"][CLEAN][0, ::dec], alpha=1., style="r--", linewidth=1, label="clean")
     noisy = SingleCurve(y=signal["buffers"][NOISY][0, ::dec], alpha=0.3, style="y-", linewidth=1, label="noisy")
@@ -112,11 +118,44 @@ def visualize_audio(signal: dict, mixed_signal, pred):
     return Curve(curves, ylim=[-0.04, 0.04], xlabel="Time index", ylabel="Amplitude")
 
 
+HERE = Path(__file__).parent
+MUTE = "mute"
+LOGOS = {
+    PREDICTED: HERE/"play_logo_pred.png",
+    MIXED: HERE/"play_logo_mixed.png",
+    CLEAN: HERE/"play_logo_clean.png",
+    NOISY: HERE/"play_logo_noise.png",
+    MUTE: HERE/"mute_logo.png",
+}
+ICONS = [it for key, it in LOGOS.items()]
+KEYS = [key for key, it in LOGOS.items()]
+
+
+@interactive(player=Control(MUTE, KEYS, icons=ICONS))
+def song_choice(sig, mixed, pred, global_params={}, player=MUTE):
+    if player == MUTE:
+        global_params["__stop"]()
+    else:
+        if player == CLEAN:
+            audio_track = sig["buffers"][CLEAN]
+        elif player == NOISY:
+            audio_track = sig["buffers"][NOISY]
+        elif player == MIXED:
+            audio_track = mixed
+        elif player == PREDICTED:
+            audio_track = pred
+        audio_track_path = "_tmp.wav"
+        save_audio_tensor(audio_track_path, audio_track, sampling_rate=global_params.get("sampling_rate", 8000))
+        global_params["__set_audio"](audio_track_path)
+        global_params["__play"]()
+
+
 def interactive_audio_separation_processing(signals, model_list, config_list):
     sig = signal_selector(signals)
     mixed = remix(sig)
-    pred = audio_sep_inference(mixed, model_list, config_list)
-    curve = visualize_audio(sig, mixed, pred)
+    pred, pred_curve = audio_sep_inference(mixed, model_list, config_list)
+    curve = visualize_audio(sig, mixed, pred_curve)
+    song_choice(sig, mixed, pred)
     return curve
 
 
@@ -126,9 +165,9 @@ def interactive_audio_separation_visualization(
         config_list: List[dict],
         device="cuda"
 ):
-    interactive_pipeline(gui="auto")(interactive_audio_separation_processing)(
-        all_signals, model_list, config_list
-    )
+    pip = HeadlessPipeline.from_function(interactive_audio_separation_processing, cache=False)
+    app = InteractivePipeQT(pipeline=pip, name="audio separation", size=None, audio=True)
+    app(all_signals, model_list, config_list)
 
 
 def visualization(
