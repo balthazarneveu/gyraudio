@@ -20,7 +20,7 @@ SNR: -4 - TRAIN SIZE 516 TEST SIZE 206
 SNR: -3 - TRAIN SIZE 450 TEST SIZE 207
 ```
 
-### :chart_with_downwards_trend: Training
+## :chart_with_downwards_trend: Training
 :id: Keep track of experiments by an integer id. 
 
 Each experiment is defined by:
@@ -29,12 +29,22 @@ Each experiment is defined by:
 - Optimizer configuration (hyperparameters)
 
 `python scripts/audio_separation_train.py -e 1`
-`python scripts/audio_separation_infer.py -e 1`
 
-### :engine: Batch processing
-Process specific audio files
-`python scripts/audio_separation_batch.py -i __data_source_separation/source_separation/test/0000 -o __output_audio -e 1`
 ### :bar_chart: [Experiment tracking](https://wandb.ai/balthazarneveu/audio-sep)
 
-### Evaluation
+## Evaluation
 Run inference/evaluation from a checkpoint
+`python scripts/audio_separation_infer.py -e 1`
+
+### :gear: Batch processing
+Process specific audio files
+`python scripts/audio_separation_batch.py -i __data_source_separation/source_separation/test/0000 -o __output_audio -e 1`
+
+### :play_or_pause_button: Interactive
+Check audio separation visually.
+```
+python scripts/audio_separation_interactive.py -i __data_source_separation/source_separation/test/000* -o __output/batch_processing -e 1 --preload -p
+```
+
+- :arrow_backward: :arrow_forward: = next audio `left` / `right`
+- :arrow_double_down: :arrow_double_up: = next model `page up` / `page down` (*compare models*)
