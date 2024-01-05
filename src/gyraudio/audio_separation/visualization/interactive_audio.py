@@ -72,11 +72,16 @@ def visualization(
     for signal in all_signals:
         print(signal["name"])
         if "buffers" not in signal:
-            load_buffers(signal, device=device)
-            # signal["sampling_rate"] = sampling_rate
+            load_buffers(signal, device="cpu")
         clean = SingleCurve(y=signal["buffers"][CLEAN][0, :], label="clean")
         noisy = SingleCurve(y=signal["buffers"][NOISY][0, :], label="noisy")
-        Curve([clean, noisy]).show()
+        curves = [clean, noisy]
+        for config, model in zip(config_list, model_list):
+            short_name = config.get(SHORT_NAME, "unknown")
+            predicted_signal, predicted_noise = model(signal["buffers"][MIXED].to(device))
+            predicted = SingleCurve(y=predicted_signal[0, :].detach().cpu().numpy(), label=f"predicted_{short_name}")
+            curves.append(predicted)
+        Curve(curves).show()
 
 
 def main(argv):
