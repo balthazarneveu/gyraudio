@@ -5,6 +5,7 @@ from pathlib import Path
 from gyraudio.audio_separation.experiment_tracking.experiments import get_experience
 from gyraudio.audio_separation.experiment_tracking.storage import get_output_folder
 from gyraudio.default_locations import EXPERIMENT_STORAGE_ROOT
+from gyraudio.audio_separation.properties import SHORT_NAME
 import torch
 from gyraudio.audio_separation.experiment_tracking.storage import load_checkpoint
 from gyraudio.io.audio import load_audio_tensor, save_audio_tensor
@@ -26,21 +27,18 @@ def outp(path: Path, suffix: str, extension=".wav"):
     return (path.parent / (path.stem + suffix)).with_suffix(extension)
 
 
-def audio_separation_processing(input: Path, output: Path, args: argparse.Namespace):
-    input_audio_path = list(input.glob("mix*.wav"))[0]
+def audio_separation_processing(
+    input: Path, output: Path, args: argparse.Namespace,
+    model: torch.nn.Module,
+    config: dict
+):
     device = args.device
-    for exp in args.experiments:
-        model_dir = Path(args.model_root)
-        short_name, model, config, _dl = get_experience(exp)
-        _, exp_dir = get_output_folder(config, root_dir=model_dir, override=False)
-        assert exp_dir.exists(), f"Experiment {short_name} does not exist in {model_dir}"
-        model.eval()
-        model.to(device)
-        model, __optimizer, epoch, config = load_checkpoint(model, exp_dir, epoch=None)
-        mixed_signal, sampling_rate = load_audio_tensor(input_audio_path, device=device)
-        predicted_signal, predicted_noise = model(mixed_signal)
-        save_audio_tensor(outp(output, f"_prediction_{short_name}"), predicted_signal, sampling_rate)
-        save_audio_tensor(outp(output, "_mix"), mixed_signal, sampling_rate)
+    short_name = config.get(SHORT_NAME, "unknown")
+    input_audio_path = list(input.glob("mix*.wav"))[0]
+    mixed_signal, sampling_rate = load_audio_tensor(input_audio_path, device=device)
+    predicted_signal, predicted_noise = model(mixed_signal)
+    save_audio_tensor(outp(output, f"_prediction_{short_name}"), predicted_signal, sampling_rate)
+    save_audio_tensor(outp(output, "_mix"), mixed_signal, sampling_rate)
 
 
 def main(argv):
@@ -49,9 +47,21 @@ def main(argv):
         input_help='input audio files',
         output_help='output directory'
     )
-    __args = parse_command_line(batch)
     batch.set_multiprocessing_enabled(False)
-    batch.run(audio_separation_processing)
+    args = parse_command_line(batch)
+    exp = args.experiments[0]
+    device = args.device
+    for exp in args.experiments:
+        model_dir = Path(args.model_root)
+        short_name, model, config, _dl = get_experience(exp)
+        print(config)
+        _, exp_dir = get_output_folder(config, root_dir=model_dir, override=False)
+        assert exp_dir.exists(), f"Experiment {short_name} does not exist in {model_dir}"
+        model.eval()
+        model.to(device)
+        model, __optimizer, epoch, config = load_checkpoint(model, exp_dir, epoch=None)
+        config[SHORT_NAME] = short_name
+        batch.run(audio_separation_processing, model, config)
 
 
 if __name__ == "__main__":
