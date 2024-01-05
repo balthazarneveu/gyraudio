@@ -10,6 +10,7 @@ import torch
 from gyraudio.audio_separation.experiment_tracking.storage import load_checkpoint
 from gyraudio.io.audio import load_audio_tensor, save_audio_tensor
 from typing import List
+import logging
 
 
 def parse_command_line(batch: Batch) -> argparse.Namespace:
@@ -54,6 +55,9 @@ def main(argv):
     args = parse_command_line(batch)
     exp = args.experiments[0]
     device = args.device
+    models_list = []
+    config_list = []
+    logging.info(f"Loading experiments models {args.experiments}")
     for exp in args.experiments:
         model_dir = Path(args.model_root)
         short_name, model, config, _dl = get_experience(exp)
@@ -63,7 +67,11 @@ def main(argv):
         model.to(device)
         model, __optimizer, epoch, config = load_checkpoint(model, exp_dir, epoch=None)
         config[SHORT_NAME] = short_name
-        batch.run(audio_separation_processing, [model], [config])
+        models_list.append(model)
+        config_list.append(config)
+        # batch.run(audio_separation_processing, [model], [config])
+    logging.info(f"Starting inference:")
+    batch.run(audio_separation_processing, models_list, config_list)
 
 
 if __name__ == "__main__":
