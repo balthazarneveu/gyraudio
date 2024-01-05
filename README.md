@@ -16,6 +16,7 @@ pip install -e .
 
 
 # :speaker: Audio separation
+[Audio source separation framework](/src/gyraudio/audio_separation/readme.md)
 
 # :test_tube: Gyraudio *[tentative]*
  a novel idea for audio source separation:
