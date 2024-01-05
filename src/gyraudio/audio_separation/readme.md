@@ -36,14 +36,15 @@ kaggle_users = {
   - `wandb_api_key`: weights and biases API key 
   - :phone: a verified kaggle account is required
 
-Run `python scripts/remote_training.py -u user1 -e X`
+Run `python scripts/audio_separation_train_remote.py -u user1 -e X`
 This will create a dedicated folder for training a specific experiment with a dedicated notebook.
-- use **`--cpu`** to setup at the begining (avoid using GPU)
+
 - use **`-p`** (`--push`) will upload/push the notebook and run it.
 - use **`-d`** (`--download`) to download the training results and save it to disk)
-Please note that the first time, you'll need to manually edit the notebook under kaggle web page to allow secrets.
 
-
+#### :green_circle: First time setup
+> - use **`--cpu`** to setup at the begining (avoid using GPU when you set up :warning: )
+> - please note that the first time, you'll need to manually edit the notebook under kaggle web page to allow secrets.
 ### Local training
 `python scripts/audio_separation_train.py -e 1`
 
