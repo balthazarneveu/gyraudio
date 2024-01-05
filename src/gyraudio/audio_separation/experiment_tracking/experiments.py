@@ -1,7 +1,7 @@
 from gyraudio.default_locations import MIXED_AUDIO_ROOT
 from gyraudio.audio_separation.properties import (
     TRAIN, TEST, VALID, NAME, EPOCHS, LEARNING_RATE,
-    OPTIMIZER, BATCH_SIZE,
+    OPTIMIZER, BATCH_SIZE, DATALOADER,
     SHORT_NAME
 )
 from gyraudio.audio_separation.data import get_dataloader, get_config_dataloader
@@ -32,6 +32,9 @@ def get_experience(exp_major: int, exp_minor: int = 0, dry_run=False) -> Tuple[s
             LEARNING_RATE: 0.001
         },
         EPOCHS: 10,
+        DATALOADER: {
+            NAME: dataloader_name,
+        }
     }
 
     model, config = get_experiment_generator(exp_major=exp_major)(config, no_model=dry_run, minor=exp_minor)
@@ -42,7 +45,7 @@ def get_experience(exp_major: int, exp_minor: int = 0, dry_run=False) -> Tuple[s
         VALID:  batch_sizes[2],
     }
 
-    if dataloader_name == "premix":
+    if config[DATALOADER][NAME] == "premix":
         mixed_audio_root = MIXED_AUDIO_ROOT
         dataloaders = get_dataloader({
             TRAIN: get_config_dataloader(

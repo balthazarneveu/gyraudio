@@ -9,6 +9,7 @@ BATCH_SIZE = "batch_size"
 SHUFFLE = "shuffle"
 SNR_FILTER = "snr_filter"
 AUGMENTATION = "augmentation"
+DATALOADER = "dataloader"
 
 # Training configuration properties (keys)
 
