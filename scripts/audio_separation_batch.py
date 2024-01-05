@@ -9,6 +9,7 @@ from gyraudio.audio_separation.properties import SHORT_NAME
 import torch
 from gyraudio.audio_separation.experiment_tracking.storage import load_checkpoint
 from gyraudio.io.audio import load_audio_tensor, save_audio_tensor
+from typing import List
 
 
 def parse_command_line(batch: Batch) -> argparse.Namespace:
@@ -29,15 +30,17 @@ def outp(path: Path, suffix: str, extension=".wav"):
 
 def audio_separation_processing(
     input: Path, output: Path, args: argparse.Namespace,
-    model: torch.nn.Module,
-    config: dict
+    model_list: List[torch.nn.Module],
+    config_list: List[dict]
 ):
     device = args.device
-    short_name = config.get(SHORT_NAME, "unknown")
     input_audio_path = list(input.glob("mix*.wav"))[0]
     mixed_signal, sampling_rate = load_audio_tensor(input_audio_path, device=device)
-    predicted_signal, predicted_noise = model(mixed_signal)
-    save_audio_tensor(outp(output, f"_prediction_{short_name}"), predicted_signal, sampling_rate)
+    with torch.no_grad():
+        for config, model in zip(config_list, model_list):
+            short_name = config.get(SHORT_NAME, "unknown")
+            predicted_signal, predicted_noise = model(mixed_signal)
+            save_audio_tensor(outp(output, f"_prediction_{short_name}"), predicted_signal, sampling_rate)
     save_audio_tensor(outp(output, "_mix"), mixed_signal, sampling_rate)
 
 
@@ -54,14 +57,13 @@ def main(argv):
     for exp in args.experiments:
         model_dir = Path(args.model_root)
         short_name, model, config, _dl = get_experience(exp)
-        print(config)
         _, exp_dir = get_output_folder(config, root_dir=model_dir, override=False)
         assert exp_dir.exists(), f"Experiment {short_name} does not exist in {model_dir}"
         model.eval()
         model.to(device)
         model, __optimizer, epoch, config = load_checkpoint(model, exp_dir, epoch=None)
         config[SHORT_NAME] = short_name
-        batch.run(audio_separation_processing, model, config)
+        batch.run(audio_separation_processing, [model], [config])
 
 
 if __name__ == "__main__":
