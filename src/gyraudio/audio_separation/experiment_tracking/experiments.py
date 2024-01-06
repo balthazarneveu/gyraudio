@@ -24,7 +24,6 @@ def get_experience(exp_major: int, exp_minor: int = 0, dry_run=False) -> Tuple[s
     model = None
     config = {}
     dataloader_name = "premix"
-    batch_sizes = [16, 128, 128]
     config = {
         NAME: None,
         OPTIMIZER: {
@@ -34,16 +33,18 @@ def get_experience(exp_major: int, exp_minor: int = 0, dry_run=False) -> Tuple[s
         EPOCHS: 10,
         DATALOADER: {
             NAME: dataloader_name,
-        }
+        },
+        BATCH_SIZE: [16, 128, 128]
     }
 
     model, config = get_experiment_generator(exp_major=exp_major)(config, no_model=dry_run, minor=exp_minor)
     # POST PROCESSING
-    config[BATCH_SIZE] = {
-        TRAIN: batch_sizes[0],
-        TEST:  batch_sizes[1],
-        VALID:  batch_sizes[2],
-    }
+    if isinstance(config[BATCH_SIZE], list) or isinstance(config[BATCH_SIZE], tuple):
+        config[BATCH_SIZE] = {
+            TRAIN: config[BATCH_SIZE][0],
+            TEST:  config[BATCH_SIZE][1],
+            VALID:  config[BATCH_SIZE][2],
+        }
 
     if config[DATALOADER][NAME] == "premix":
         mixed_audio_root = MIXED_AUDIO_ROOT
