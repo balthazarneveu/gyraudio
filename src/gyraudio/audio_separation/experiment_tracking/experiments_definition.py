@@ -41,7 +41,6 @@ def exp_unet(config, h_dim=16, model=None):
 
 @registered_experiment(major=2)
 def exp_2_unet(config, model: bool = None, minor=None):
-    config[MAX_STEPS_PER_EPOCH] = 2
     config[BATCH_SIZE] = [16, 32, 32]
     config[EPOCHS] = 200
     config, model = exp_unet(config, model=model)
