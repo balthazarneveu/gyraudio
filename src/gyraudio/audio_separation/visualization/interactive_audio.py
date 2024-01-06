@@ -80,13 +80,17 @@ def signal_selector(signals, idx=0, global_params={}):
 
 
 @interactive(
+    dataset_mix=(True,),
     snr=(6., [-3., 6.], "extra SNR amplification [dB]")
 )
-def remix(signals, snr=0.):
-    signal = signals["buffers"][CLEAN]
-    noisy = signals["buffers"][NOISY]
-    # mixed_signal = signal + 10.**(-snr/20.)*noisy
-    mixed_signal = 10.**(snr/20.)*signal + noisy
+def remix(signals, dataset_mix=True, snr=0.):
+    if dataset_mix:
+        mixed_signal = signals["buffers"][MIXED]
+    else:
+        signal = signals["buffers"][CLEAN]
+        noisy = signals["buffers"][NOISY]
+        # mixed_signal = signal + 10.**(-snr/20.)*noisy
+        mixed_signal = 10.**(snr/20.)*signal + noisy
     return mixed_signal
 
 
@@ -131,8 +135,10 @@ ICONS = [it for key, it in LOGOS.items()]
 KEYS = [key for key, it in LOGOS.items()]
 
 
-@interactive(player=Control(MUTE, KEYS, icons=ICONS))
-def song_choice(sig, mixed, pred, global_params={}, player=MUTE):
+@interactive(
+    volume=(100, [0, 1000], "volume"),
+    player=Control(MUTE, KEYS, icons=ICONS))
+def audio_player(sig, mixed, pred, global_params={}, volume=100, player=MUTE):
     if player == MUTE:
         global_params["__stop"]()
     else:
@@ -145,7 +151,7 @@ def song_choice(sig, mixed, pred, global_params={}, player=MUTE):
         elif player == PREDICTED:
             audio_track = pred
         audio_track_path = "_tmp.wav"
-        save_audio_tensor(audio_track_path, audio_track, sampling_rate=global_params.get("sampling_rate", 8000))
+        save_audio_tensor(audio_track_path, volume/100.*audio_track, sampling_rate=global_params.get("sampling_rate", 8000))
         global_params["__set_audio"](audio_track_path)
         global_params["__play"]()
 
@@ -155,7 +161,7 @@ def interactive_audio_separation_processing(signals, model_list, config_list):
     mixed = remix(sig)
     pred, pred_curve = audio_sep_inference(mixed, model_list, config_list)
     curve = visualize_audio(sig, mixed, pred_curve)
-    song_choice(sig, mixed, pred)
+    audio_player(sig, mixed, pred)
     return curve
 
 
