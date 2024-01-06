@@ -41,7 +41,7 @@ def exp_unet(config, h_dim=16, model=None):
 
 @registered_experiment(major=2)
 def exp_2_unet(config, model: bool = None, minor=None):
-    config[BATCH_SIZE] = [16, 32, 32]
+    config[BATCH_SIZE] = [16, 16, 16]
     config[EPOCHS] = 200
     config, model = exp_unet(config, model=model)
     return config, model
@@ -50,7 +50,7 @@ def exp_2_unet(config, model: bool = None, minor=None):
 @registered_experiment(major=3)
 def exp_3_unet(config, model: bool = None, minor=None):
     config[EPOCHS] = 200
-    config[BATCH_SIZE] = [32, 64, 64]
+    config[BATCH_SIZE] = [32, 32, 32]
     config, model = exp_unet(config, model=model)
     return config, model
 

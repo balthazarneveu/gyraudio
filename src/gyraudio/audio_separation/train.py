@@ -75,6 +75,7 @@ def training_loop(model: torch.nn.Module, config: dict, dl, device: str = "cuda"
         # Validation loop
         # -----------------------------------------------------------
         model.eval()
+        torch.cuda.empty_cache()
         with torch.no_grad():
             test_loss = 0.
             for step_index, (batch_mix, batch_signal, batch_noise) in tqdm(
@@ -93,8 +94,8 @@ def training_loop(model: torch.nn.Module, config: dict, dl, device: str = "cuda"
         metrics[TRAIN][LOSS_L2] = training_loss
         metrics[TEST][LOSS_L2] = test_loss
         Dump.save_json(metrics, exp_dir/f"metrics_{epoch:04d}.json")
-        # torch.save(model.state_dict(), exp_dir/f"model_{epoch:04d}.pt")
         save_checkpoint(model, exp_dir, optimizer, config=config, epoch=epoch)
+        torch.cuda.empty_cache()
 
 
 def main(argv):
@@ -104,7 +105,7 @@ def main(argv):
     parser_def.add_argument("-nowb", "--no-wandb", action="store_true")
     parser_def.add_argument("-o", "--output-dir", type=str, default=EXPERIMENT_STORAGE_ROOT)
     parser_def.add_argument("-f", "--force", action="store_true", help="Override existing experiment")
-    
+
     parser_def.add_argument("-d", "--device", type=str, default=default_device,
                             help="Training device", choices=["cpu", "cuda"])
     args = parser_def.parse_args(argv)
