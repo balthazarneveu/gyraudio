@@ -31,11 +31,18 @@ def exp_1(config, model: bool = None, minor=None):
     return config, model
 
 
-def exp_unet(config, h_dim=16, model=None):
+def exp_unet(config, h_dim=16, k_size=5, model=None):
     config[NAME] = "Res-UNet"
-    config[ANNOTATIONS] = "Res-UNet-4 scales"
+    scales = 4
+    config[ANNOTATIONS] = f"Res-UNet-{scales}scales_h={h_dim}_k={k_size}"
+    config["Architecture"] = {
+        "name": "Res-UNet",
+        "h_dim": h_dim,
+        "scales": scales,
+        "k_size": k_size,
+    }
     if model is None:
-        model = ResUNet(h_dim=h_dim)
+        model = ResUNet(h_dim=h_dim, k_size=k_size)
     return config, model
 
 
@@ -52,6 +59,22 @@ def exp_3_unet(config, model: bool = None, minor=None):
     config[EPOCHS] = 200
     config[BATCH_SIZE] = [32, 32, 32]
     config, model = exp_unet(config, model=model)
+    return config, model
+
+
+@registered_experiment(major=4)
+def exp_4_unet(config, model: bool = None, minor=None):
+    config[EPOCHS] = 200
+    config[BATCH_SIZE] = [16, 16, 16]
+    config, model = exp_unet(config, model=model, k_size=7)
+    return config, model
+
+
+@registered_experiment(major=5)
+def exp_5_unet(config, model: bool = None, minor=None):
+    config[EPOCHS] = 200
+    config[BATCH_SIZE] = [8, 8, 8]
+    config, model = exp_unet(config, model=model, h_dim=32)
     return config, model
 
 
