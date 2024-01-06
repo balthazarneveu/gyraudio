@@ -1,4 +1,5 @@
 from gyraudio.audio_separation.architecture.flat_conv import FlatConvolutional
+from gyraudio.audio_separation.architecture.unet import ResUNet
 from gyraudio.audio_separation.properties import (
     NAME, ANNOTATIONS, MAX_STEPS_PER_EPOCH, EPOCHS, BATCH_SIZE
 )
@@ -27,6 +28,31 @@ def exp_1(config, model: bool = None, minor=None):
     config[ANNOTATIONS] = "Baseline"
     if model is None:
         model = FlatConvolutional()
+    return config, model
+
+
+def exp_unet(config, h_dim=16, model=None):
+    config[NAME] = "Res-UNet"
+    config[ANNOTATIONS] = "Res-UNet-4 scales"
+    if model is None:
+        model = ResUNet(h_dim=h_dim)
+    return config, model
+
+
+@registered_experiment(major=2)
+def exp_2_unet(config, model: bool = None, minor=None):
+    config[MAX_STEPS_PER_EPOCH] = 2
+    config[BATCH_SIZE] = [16, 32, 32]
+    config[EPOCHS] = 200
+    config, model = exp_unet(config, model=model)
+    return config, model
+
+
+@registered_experiment(major=3)
+def exp_3_unet(config, model: bool = None, minor=None):
+    config[EPOCHS] = 200
+    config[BATCH_SIZE] = [32, 64, 64]
+    config, model = exp_unet(config, model=model)
     return config, model
 
 
