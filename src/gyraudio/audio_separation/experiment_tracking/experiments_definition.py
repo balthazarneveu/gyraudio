@@ -1,5 +1,6 @@
 from gyraudio.audio_separation.architecture.flat_conv import FlatConvolutional
 from gyraudio.audio_separation.architecture.unet import ResUNet
+from gyraudio.audio_separation.architecture.transformer import TransformerModel
 from gyraudio.audio_separation.properties import (
     NAME, ANNOTATIONS, MAX_STEPS_PER_EPOCH, EPOCHS, BATCH_SIZE
 )
@@ -75,6 +76,49 @@ def exp_5_unet(config, model: bool = None, minor=None):
     config[EPOCHS] = 200
     config[BATCH_SIZE] = [8, 8, 8]
     config, model = exp_unet(config, model=model, h_dim=32)
+    return config, model
+
+
+def exp_transformer(
+    config,
+    model=None,
+    nhead: int = 4,  # H
+    nlayers: int = 4,  # L
+    dropout: float = 0.,  # dr
+    embedding_dim: int = 64,  # D
+    ch_in: int = 1,
+    ch_out: int = 1,
+    k_size=5,
+    positional_encoding: str = None,
+):
+    config[NAME] = "Transformer"
+
+    config["Architecture"] = dict(
+        nhead=nhead,
+        nlayers=nlayers,
+        dropout=dropout,
+        embedding_dim=embedding_dim,
+        ch_in=ch_in,
+        ch_out=ch_out,
+        k_size=k_size,
+        positional_encoding=positional_encoding
+    )
+    config[ANNOTATIONS] = f"Transformer-{nhead}H-{nlayers}L-D={embedding_dim}-k={k_size}"
+    if dropout > 0:
+        config[ANNOTATIONS] += f"-dropout={dropout:.3f}"
+    if model is None:
+        model = TransformerModel(
+            **config["Architecture"]
+        )
+    config["Architecture"][NAME] = "Transformer"
+    return config, model
+
+
+@registered_experiment(major=200)
+def exp_200_transformer_baseline(config, model: bool = None, minor=None):
+    config[EPOCHS] = 200
+    config[BATCH_SIZE] = [8, 8, 8]
+    config, model = exp_transformer(config, model=model, nhead=2, nlayers=2, dropout=0., embedding_dim=16)
     return config, model
 
 
