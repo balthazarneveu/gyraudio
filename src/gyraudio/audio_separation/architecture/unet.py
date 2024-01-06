@@ -1,28 +1,8 @@
 import torch
 from gyraudio.audio_separation.architecture.model import SeparationModel
-from typing import Tuple, Optional
-import logging
-
-
-class ResConvolution(torch.nn.Module):
-    """ResNet building block
-    https://paperswithcode.com/method/residual-connection
-    """
-
-    def __init__(self, ch, hdim=None, k_size=5):
-        super().__init__()
-        hdim = hdim or ch
-        self.conv1 = torch.nn.Conv1d(ch, hdim, k_size, padding=k_size//2)
-        self.conv2 = torch.nn.Conv1d(hdim, ch, k_size, padding=k_size//2)
-        self.non_linearity = torch.nn.ReLU()
-
-    def forward(self, x_in):
-        x = self.conv1(x_in)
-        x = self.non_linearity(x)
-        x = self.conv2(x)
-        x += x_in
-        x = self.non_linearity(x)
-        return x
+from gyraudio.audio_separation.architecture.building_block import ResConvolution
+from typing import Optional
+# import logging
 
 
 class EncoderSingleStage(torch.nn.Module):
@@ -55,13 +35,13 @@ class DecoderSingleStage(torch.nn.Module):
     """
 
     def __init__(self, ch: int, ch_out: int, hdim: Optional[int] = None, k_size=5):
-        """_summary_
+        """Decoder stage
 
         Args:
-            ch (int): _description_
-            ch_out (int): _description_
-            hdim (Optional[int], optional): _description_. Defaults to None.
-            k_size (int, optional): _description_. Defaults to 5.
+            ch (int): channel size (downsampled & skip connection have same channel size)
+            ch_out (int): number of output channels (shall match the number of input channels of the next stage)
+            hdim (Optional[int], optional): Hidden dimension used in the residual block. Defaults to None.
+            k_size (int, optional): Convolution size. Defaults to 5.
         Notes:
         ======
         ch_out = 2*ch/extension_factor
