@@ -1,5 +1,6 @@
 from gyraudio.audio_separation.architecture.flat_conv import FlatConvolutional
 from gyraudio.audio_separation.architecture.unet import ResUNet
+from gyraudio.audio_separation.architecture.wave_unet import WaveUNet
 from gyraudio.audio_separation.architecture.transformer import TransformerModel
 from gyraudio.audio_separation.properties import (
     NAME, ANNOTATIONS, MAX_STEPS_PER_EPOCH, EPOCHS, BATCH_SIZE
@@ -32,7 +33,8 @@ def exp_1(config, model: bool = None, minor=None):
     return config, model
 
 
-def exp_unet(config, h_dim=16, k_size=5, model=None):
+# ------------------ Res U-Net ------------------
+def exp_resunet(config, h_dim=16, k_size=5, model=None):
     config[NAME] = "Res-UNet"
     scales = 4
     config[ANNOTATIONS] = f"Res-UNet-{scales}scales_h={h_dim}_k={k_size}"
@@ -48,35 +50,70 @@ def exp_unet(config, h_dim=16, k_size=5, model=None):
 
 
 @registered_experiment(major=2)
-def exp_2_unet(config, model: bool = None, minor=None):
+def exp_2_resunet(config, model: bool = None, minor=None):
     config[BATCH_SIZE] = [16, 16, 16]
     config[EPOCHS] = 200
-    config, model = exp_unet(config, model=model)
+    config, model = exp_resunet(config, model=model)
     return config, model
 
 
 @registered_experiment(major=3)
-def exp_3_unet(config, model: bool = None, minor=None):
+def exp_3_resunet(config, model: bool = None, minor=None):
     config[EPOCHS] = 200
     config[BATCH_SIZE] = [32, 32, 32]
-    config, model = exp_unet(config, model=model)
+    config, model = exp_resunet(config, model=model)
     return config, model
 
 
 @registered_experiment(major=4)
-def exp_4_unet(config, model: bool = None, minor=None):
+def exp_4_resunet(config, model: bool = None, minor=None):
     config[EPOCHS] = 200
     config[BATCH_SIZE] = [16, 16, 16]
-    config, model = exp_unet(config, model=model, k_size=7)
+    config, model = exp_resunet(config, model=model, k_size=7)
     return config, model
 
 
 @registered_experiment(major=5)
-def exp_5_unet(config, model: bool = None, minor=None):
+def exp_5_resunet(config, model: bool = None, minor=None):
     config[EPOCHS] = 200
     config[BATCH_SIZE] = [8, 8, 8]
-    config, model = exp_unet(config, model=model, h_dim=32)
+    config, model = exp_resunet(config, model=model, h_dim=32)
     return config, model
+
+# ------------------ Wave U-Net ------------------
+
+
+def exp_wave_unet(config: dict,
+                  channels_extension: int = 24,
+                  k_conv_ds: int = 15,
+                  k_conv_us: int = 5,
+                  num_layers: int = 4,
+                  model=None):
+    config[NAME] = "Wave-UNet"
+    config[ANNOTATIONS] = f"Wave-UNet-{num_layers}scales_h_ext={channels_extension}_k={k_conv_ds}ds-{k_conv_us}us"
+    config["Architecture"] = {
+        "k_conv_us": k_conv_us,
+        "k_conv_ds": k_conv_ds,
+        "num_layers": num_layers,
+        "channels_extension": channels_extension
+    }
+    if model is None:
+        model = WaveUNet(
+            **config["Architecture"]
+        )
+    config["Architecture"][NAME] = "Wave-UNet"
+    return config, model
+
+
+@registered_experiment(major=300)
+def exp_300_waveunet(config, model: bool = None, minor=None):
+    config[BATCH_SIZE] = [16, 16, 16]
+    config[EPOCHS] = 200
+    config, model = exp_wave_unet(config, model=model)
+    return config, model
+
+
+# ------------------ TRANSFORMER ------------------
 
 
 def exp_transformer(
