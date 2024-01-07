@@ -122,6 +122,14 @@ def exp_301_waveunet(config, model: bool = None, minor=None):
     # 7 layers, ext +16 - Nvidia T500 4Gb RAM - 16 batch size
     return config, model
 
+
+@registered_experiment(major=302)
+def exp_302_waveunet(config, model: bool = None, minor=None):
+    config[BATCH_SIZE] = [16, 16, 16]
+    config[EPOCHS] = 60
+    config, model = exp_wave_unet(config, model=model, num_layers=7, channels_extension=24)
+    # 7 layers, ext +24 - Nvidia T500 4Gb RAM - 16 batch size
+    return config, model
 # ------------------ TRANSFORMER ------------------
 
 
