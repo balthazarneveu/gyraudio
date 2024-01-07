@@ -142,6 +142,14 @@ def exp_303_waveunet(config, model: bool = None, minor=None):
     # 7 layers, ext +24 - Nvidia RTX3060 6Gb RAM - 16 batch size
     return config, model
 
+@registered_experiment(major=304)
+def exp_304_waveunet(config, model: bool = None, minor=None):
+    config[BATCH_SIZE] = [16, 16, 16]
+    config[EPOCHS] = 60
+    config, model = exp_wave_unet(config, model=model, num_layers=6, channels_extension=24)
+    # 6 layers, ext +24 - Nvidia RTX3060 6Gb RAM - 16 batch size
+    return config, model
+
 # ------------------ TRANSFORMER ------------------
 
 
