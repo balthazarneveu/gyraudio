@@ -69,7 +69,7 @@ def audio_loading(
 
 
 @interactive(
-    idx=KeyboardControl(value_default=0, value_range=[0, 1000], modulo=True, keyup="right", keydown="left")
+    idx=KeyboardControl(value_default=0, value_range=[0, 1000], modulo=True, keyup="8", keydown="2")
 )
 def signal_selector(signals, idx=0, global_params={}):
     signal = signals[idx % len(signals)]
@@ -106,18 +106,41 @@ def audio_sep_inference(mixed, models, configs, model: int = 0):
     predicted_signal, predicted_noise = selected_model(mixed.to(device).unsqueeze(0))
     predicted_signal = predicted_signal.squeeze(0)
     pred_curve = SingleCurve(y=predicted_signal[0, :].detach().cpu().numpy(),
-                             style="b-", label=f"predicted_{short_name} {annotations}")
+                             style="g-", label=f"predicted_{short_name} {annotations}")
     return predicted_signal, pred_curve
 
 
-def visualize_audio(signal: dict, mixed_signal, pred):
+def zin(sig, zoom, center, num_samples=300):
+    N = len(sig)
+    native_ds = N/num_samples
+    center_idx = int(center*N)
+    window = int(num_samples/zoom*native_ds)
+    start_idx = max(0, center_idx - window//2)
+    end_idx = min(N, center_idx + window//2)
+    out = np.zeros(num_samples)
+    skip_factor = max(1, int(native_ds/zoom))
+    # print("SKIP FACTOR!!!!!!!!!!!!!!!!!!!!!!!", skip_factor)
+    trimmed = sig[start_idx:end_idx:skip_factor]
+    out[:len(trimmed)] = trimmed[:num_samples]
+    return out
+
+
+@interactive(
+    center=KeyboardControl(value_default=0.5, value_range=[0., 1.], step=0.01, keyup="6", keydown="4"),
+    zoom=KeyboardControl(value_default=0., value_range=[0., 8.], step=1, keyup="+", keydown="-")
+)
+def visualize_audio(signal: dict, mixed_signal, pred, zoom=1, center=0.5):
     """Create curves
     """
-    dec = 200
-    clean = SingleCurve(y=signal["buffers"][CLEAN][0, ::dec], alpha=1., style="r--", linewidth=1, label="clean")
-    noisy = SingleCurve(y=signal["buffers"][NOISY][0, ::dec], alpha=0.3, style="y-", linewidth=1, label="noisy")
-    mixed = SingleCurve(y=mixed_signal[0, ::dec], style="g-", alpha=0.5, linewidth=2, label="mixed")
-    pred.y = pred.y[::dec]
+    # dec = int(200/zoom)
+    zval = 1.5**zoom
+    clean = SingleCurve(y=zin(signal["buffers"][CLEAN][0, :], zval, center),
+                        alpha=1., style="k-", linewidth=0.9, label="clean")
+    noisy = SingleCurve(y=zin(signal["buffers"][NOISY][0, :], zval, center),
+                        alpha=0.3, style="y--", linewidth=1, label="noisy")
+    mixed = SingleCurve(y=zin(mixed_signal[0, :], zval, center), style="r-", alpha=0.1, linewidth=2, label="mixed")
+    # pred.y = pred.y[::dec]
+    pred.y = zin(pred.y, zval, center)
     curves = [noisy, mixed, pred, clean]
     return Curve(curves, ylim=[-0.04, 0.04], xlabel="Time index", ylabel="Amplitude")
 
@@ -151,7 +174,8 @@ def audio_player(sig, mixed, pred, global_params={}, volume=100, player=MUTE):
         elif player == PREDICTED:
             audio_track = pred
         audio_track_path = "_tmp.wav"
-        save_audio_tensor(audio_track_path, volume/100.*audio_track, sampling_rate=global_params.get("sampling_rate", 8000))
+        save_audio_tensor(audio_track_path, volume/100.*audio_track,
+                          sampling_rate=global_params.get("sampling_rate", 8000))
         global_params["__set_audio"](audio_track_path)
         global_params["__play"]()
 
