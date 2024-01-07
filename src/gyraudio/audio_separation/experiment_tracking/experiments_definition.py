@@ -108,10 +108,19 @@ def exp_wave_unet(config: dict,
 @registered_experiment(major=300)
 def exp_300_waveunet(config, model: bool = None, minor=None):
     config[BATCH_SIZE] = [16, 16, 16]
-    config[EPOCHS] = 200
-    config, model = exp_wave_unet(config, model=model)
+    config[EPOCHS] = 60
+    config, model = exp_wave_unet(config, model=model, num_layers=4, channels_extension=24)
+    # 4 layers, ext +24 - Nvidia T500 4Gb RAM - 16 batch size
     return config, model
 
+
+@registered_experiment(major=301)
+def exp_301_waveunet(config, model: bool = None, minor=None):
+    config[BATCH_SIZE] = [16, 16, 16]
+    config[EPOCHS] = 60
+    config, model = exp_wave_unet(config, model=model, num_layers=7, channels_extension=16)
+    # 7 layers, ext +16 - Nvidia T500 4Gb RAM - 16 batch size
+    return config, model
 
 # ------------------ TRANSFORMER ------------------
 
