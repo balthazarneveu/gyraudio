@@ -1,7 +1,6 @@
 import torch
 from gyraudio.audio_separation.architecture.model import SeparationModel
-from gyraudio.audio_separation.architecture.building_block import ResConvolution
-from typing import Optional
+from typing import Optional, Tuple
 
 
 def get_non_linearity(activation: str):
@@ -75,65 +74,81 @@ class WaveUNet(SeparationModel):
                  channels_extension: int = 24,
                  k_conv_ds: int = 15,
                  k_conv_us: int = 5,
-                 num_layers: int = 4,
+                 num_layers: int = 6,
                  ) -> None:
-        assert num_layers == 4, "Only 4 layers supported for now"
         super().__init__()
         self.need_split = ch_out != ch_in
         self.ch_out = ch_out
         self.encoder_list = torch.nn.ModuleList()
         self.decoder_list = torch.nn.ModuleList()
         self.non_linearity = torch.nn.ReLU()
+        # Defining first encoder
         self.encoder_list.append(EncoderStage(ch_in, channels_extension, k_size=k_conv_ds))
         for level in range(1, num_layers+1):
             ch_i = level*channels_extension
             ch_o = (level+1)*channels_extension
-            self.encoder_list.append(EncoderStage(ch_i, ch_o, k_size=k_conv_ds))
+            if level < num_layers:
+                # Skipping last encoder since we defined the first one outside the loop
+                self.encoder_list.append(EncoderStage(ch_i, ch_o, k_size=k_conv_ds))
             self.decoder_list.append(DecoderStage(ch_o+ch_i, ch_i, k_size=k_conv_us))
         self.bottleneck = BaseConvolutionBlock(
             num_layers*channels_extension,
             (num_layers+1)*channels_extension,
             k_size=k_conv_ds)
-        self.target_modality_conv = torch.nn.Conv1d(channels_extension, ch_out, 1)  # conv1x1 channel mixer
+        self.target_modality_conv = torch.nn.Conv1d(channels_extension+ch_in, ch_out, 1)  # conv1x1 channel mixer
 
-    def forward(self, x_in):
-        # x_in (1, 2048)
-        x1_skip, x1_ds = self.encoder_list[0](x_in)
-        # x1_skip -> (24, 2048)
-        # x1_ds   -> (24, 1024)
-        print(x1_skip.shape, x1_ds.shape)
+    def forward(self, x_in: torch.Tensor) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
+        """Forward UNET pass
 
-        x2_skip, x2_ds = self.encoder_list[1](x1_ds)
-        # x2_skip -> (48, 1024)
-        # x2_ds   -> (48, 512)
-        print(x2_skip.shape, x2_ds.shape)
+        ```
+        (1  , 2048)----------------->(24 , 2048) > (1  , 2048)
+            v                            ^
+        (24 , 1024)----------------->(48 , 1024)
+            v                            ^
+        (48 , 512 )----------------->(72 , 512 )
+            v                            ^
+        (72 , 256 )----------------->(96 , 256 )
+            v                            ^
+        (96 , 128 )----BOTTLENECK--->(120, 128 )
+        ```
 
-        x3_skip, x3_ds = self.encoder_list[2](x2_ds)
-        # x3_skip -> (72, 512)
-        # x3_ds   -> (72, 256)
-        print(x3_skip.shape, x3_ds.shape)
-
-        x4_skip, x4_ds = self.encoder_list[3](x3_ds)
-        # x4_skip -> (96, 256)
-        # x4_ds   -> (96, 128)
-        print(x4_skip.shape, x4_ds.shape)
-
-        x4_dec = self.bottleneck(x4_ds)
-        print(x4_dec.shape)
-        x3_dec = self.decoder_list[3](x4_dec, x4_skip)
-        print(x3_dec.shape, x3_skip.shape)
-        x2_dec = self.decoder_list[2](x3_dec, x3_skip)
-        x1_dec = self.decoder_list[1](x2_dec, x2_skip)
-        x0_dec = self.decoder_list[0](x1_dec, x1_skip)
-        # no relu
-        demuxed = self.target_modality_conv(x0_dec)
+        """
+        skipped_list = []
+        ds_list = [x_in]
+        for level, enc in enumerate(self.encoder_list):
+            x_skip, x_ds = enc(ds_list[-1])
+            skipped_list.append(x_skip)
+            ds_list.append(x_ds.clone())
+            # print(x_skip.shape, x_ds.shape)
+        x_dec = self.bottleneck(ds_list[-1])
+        for level, dec in enumerate(self.decoder_list[::-1]):
+            x_dec = dec(x_dec, skipped_list[-1-level])
+        # print(x_dec.shape)
+        x_dec = torch.cat([x_dec, x_in], dim=1)
+        # print(x_dec.shape)
+        demuxed = self.target_modality_conv(x_dec)
+        # print(demuxed.shape)
         if self.need_split:
             return torch.chunk(demuxed, self.ch_out, dim=1)
         return demuxed, None
 
+        # x_skip, x_ds
+        # (24, 2048), (24, 1024)
+        # (48, 1024), (48, 512 )
+        # (72, 512 ), (72, 256 )
+        # (96, 256 ), (96, 128 )
+
+        # (120, 128 )
+        # (96 , 256 )
+        # (72 , 512 )
+        # (48 , 1024)
+        # (24 , 2048)
+        # (25 , 2048) demuxed - after concat
+        # (1  , 2048)
+
 
 if __name__ == "__main__":
-    model = WaveUNet(ch_out=1)
+    model = WaveUNet(ch_out=1, num_layers=9)
     inp = torch.rand(2, 1, 2048)
     out = model(inp)
     print(model)
