@@ -18,6 +18,7 @@ class EncoderSingleStage(torch.nn.Module):
         hdim = hdim or ch
         self.extension_conv = torch.nn.Conv1d(ch, ch_out, k_size, padding=k_size//2)
         self.res_conv = ResConvolution(ch_out, hdim=hdim, k_size=k_size)
+        # warning on maxpooling jitter offset!
         self.max_pool = torch.nn.MaxPool1d(kernel_size=2)
 
     def forward(self, x):
@@ -56,6 +57,9 @@ class DecoderSingleStage(torch.nn.Module):
         self.scale_mixers_conv = torch.nn.Conv1d(2*ch, ch_out, k_size, padding=k_size//2)
 
         self.res_conv = ResConvolution(ch_out, hdim=hdim, k_size=k_size)
+        # warning: Linear interpolation shall be "conjugated" with the skipping downsampling
+        # special care shall be taken care of regarding offsets
+        # https://arxiv.org/abs/1806.03185
         self.upsample = torch.nn.Upsample(scale_factor=2, mode="linear", align_corners=True)
         self.non_linearity = torch.nn.ReLU()
 
