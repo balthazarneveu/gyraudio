@@ -117,6 +117,7 @@ def exp_300_waveunet(config, model: bool = None, minor=None):
 
 @registered_experiment(major=301)
 def exp_301_waveunet(config, model: bool = None, minor=None):
+    # OVERFIT 1M params
     config[BATCH_SIZE] = [16, 16, 16]
     config[EPOCHS] = 60
     config, model = exp_wave_unet(config, model=model, num_layers=7, channels_extension=16)
@@ -126,14 +127,17 @@ def exp_301_waveunet(config, model: bool = None, minor=None):
 
 @registered_experiment(major=302)
 def exp_302_waveunet(config, model: bool = None, minor=None):
+    # OVERFIT 2.3M params
     config[BATCH_SIZE] = [16, 16, 16]
     config[EPOCHS] = 60
     config, model = exp_wave_unet(config, model=model, num_layers=7, channels_extension=24)
     # 7 layers, ext +24 - Nvidia RTX3060 6Gb RAM - 16 batch size
     return config, model
 
+
 @registered_experiment(major=303)
 def exp_303_waveunet(config, model: bool = None, minor=None):
+    # DIVERGE, WEIGHT DECAY DOES NOT WORK
     config[BATCH_SIZE] = [16, 16, 16]
     config[EPOCHS] = 100
     # config[OPTIMIZER][LEARNING_RATE] = 0.0005 # DIVERGE
@@ -141,6 +145,7 @@ def exp_303_waveunet(config, model: bool = None, minor=None):
     config, model = exp_wave_unet(config, model=model, num_layers=7, channels_extension=24)
     # 7 layers, ext +24 - Nvidia RTX3060 6Gb RAM - 16 batch size
     return config, model
+
 
 @registered_experiment(major=304)
 def exp_304_waveunet(config, model: bool = None, minor=None):
