@@ -3,7 +3,9 @@ from gyraudio.audio_separation.architecture.unet import ResUNet
 from gyraudio.audio_separation.architecture.wave_unet import WaveUNet
 from gyraudio.audio_separation.architecture.transformer import TransformerModel
 from gyraudio.audio_separation.properties import (
-    NAME, ANNOTATIONS, MAX_STEPS_PER_EPOCH, EPOCHS, BATCH_SIZE, OPTIMIZER, LEARNING_RATE,
+    NAME, ANNOTATIONS, MAX_STEPS_PER_EPOCH, EPOCHS, BATCH_SIZE,
+    OPTIMIZER,
+    DATALOADER,
     WEIGHT_DECAY
 )
 from gyraudio.audio_separation.experiment_tracking.experiments_decorator import (
@@ -154,6 +156,18 @@ def exp_304_waveunet(config, model: bool = None, minor=None):
     config, model = exp_wave_unet(config, model=model, num_layers=6, channels_extension=24)
     # 6 layers, ext +24 - Nvidia RTX3060 6Gb RAM - 16 batch size
     return config, model
+
+
+@registered_experiment(major=305)
+def exp_305_waveunet(config, model: bool = None, minor=None):
+    # OVERFIT 2.3M params
+    config[BATCH_SIZE] = [16, 16, 16]
+    config[EPOCHS] = 60
+    config, model = exp_wave_unet(config, model=model, num_layers=7, channels_extension=24)
+    config[DATALOADER][NAME] = "remix"
+    # 7 layers, ext +24 - Nvidia RTX3060 6Gb RAM - 16 batch size
+    return config, model
+
 
 # ------------------ TRANSFORMER ------------------
 
