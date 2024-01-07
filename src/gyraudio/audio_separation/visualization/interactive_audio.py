@@ -127,7 +127,7 @@ def zin(sig, zoom, center, num_samples=300):
 
 @interactive(
     center=KeyboardControl(value_default=0.5, value_range=[0., 1.], step=0.01, keyup="6", keydown="4"),
-    zoom=KeyboardControl(value_default=0., value_range=[0., 8.], step=1, keyup="+", keydown="-")
+    zoom=KeyboardControl(value_default=0., value_range=[0., 11.], step=1, keyup="+", keydown="-")
 )
 def visualize_audio(signal: dict, mixed_signal, pred, zoom=1, center=0.5):
     """Create curves
