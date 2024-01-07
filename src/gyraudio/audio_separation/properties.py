@@ -15,6 +15,8 @@ DATALOADER = "dataloader"
 
 OPTIMIZER = "optimizer"
 LEARNING_RATE = "lr"
+WEIGHT_DECAY = "weight_decay"
+BETAS = "betas"
 EPOCHS = "epochs"
 BATCH_SIZE = "batch_size"
 MAX_STEPS_PER_EPOCH = "max_steps_per_epoch"
