@@ -8,64 +8,17 @@ from gyraudio.default_locations import EXPERIMENT_STORAGE_ROOT
 from gyraudio.audio_separation.properties import SHORT_NAME, CLEAN, NOISY, MIXED, PREDICTED, ANNOTATIONS
 import torch
 from gyraudio.audio_separation.experiment_tracking.storage import load_checkpoint
-from gyraudio.io.audio import load_audio_tensor, save_audio_tensor
+from gyraudio.audio_separation.visualization.pre_load_audio import (
+    parse_command_line_audio_load, load_buffers, audio_loading_batch)
+from gyraudio.io.audio import save_audio_tensor
 from typing import List
 import numpy as np
 import logging
 from interactive_pipe.data_objects.curves import Curve, SingleCurve
-from interactive_pipe import interactive_pipeline, interactive, KeyboardControl
+from interactive_pipe import interactive, KeyboardControl
 from interactive_pipe.headless.pipeline import HeadlessPipeline
 from interactive_pipe.graphical.qt_gui import InteractivePipeQT
 from interactive_pipe import Control
-
-
-def parse_command_line(batch: Batch) -> argparse.Namespace:
-    default_device = "cuda" if torch.cuda.is_available() else "cpu"
-    parser = argparse.ArgumentParser(description='Batch audio processing',
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("-e",  "--experiments", type=int, nargs="+", required=True,
-                        help="Experiment ids to be inferred sequentially")
-    parser.add_argument("-preload", "--preload", action="store_true", help="Preload audio files")
-    parser.add_argument("-p", "--interactive", action="store_true", help="Play = Interactive mode")
-    parser.add_argument("-m", "--model-root", type=str, default=EXPERIMENT_STORAGE_ROOT)
-    parser.add_argument("-d", "--device", type=str, default=default_device)
-    return batch.parse_args(parser)
-
-
-def outp(path: Path, suffix: str, extension=".wav"):
-    return (path.parent / (path.stem + suffix)).with_suffix(extension)
-
-
-def load_buffers(signal: dict, device="cpu"):
-    clean_signal, sampling_rate = load_audio_tensor(signal["paths"][CLEAN], device=device)
-    noisy_signal, sampling_rate = load_audio_tensor(signal["paths"][NOISY], device=device)
-    mixed_signal, sampling_rate = load_audio_tensor(signal["paths"][MIXED], device=device)
-    signal["buffers"] = {
-        CLEAN: clean_signal,
-        NOISY: noisy_signal,
-        MIXED: mixed_signal
-    }
-    signal["sampling_rate"] = sampling_rate
-
-
-def audio_loading(
-    input: Path, output: Path, args: argparse.Namespace,
-):
-    name = input.name
-    clean_audio_path = input/"voice.wav"
-    noisy_audio_path = input/"noise.wav"
-    mixed_audio_path = list(input.glob("mix*.wav"))[0]
-    signal = {
-        "name": name,
-        "paths": {
-            CLEAN: clean_audio_path,
-            NOISY: noisy_audio_path,
-            MIXED: mixed_audio_path
-        }
-    }
-    if args.preload:
-        load_buffers(signal)
-    return signal
 
 
 @interactive(
@@ -222,6 +175,19 @@ def visualization(
         Curve(curves).show()
 
 
+def parse_command_line(parser: Batch = None) -> argparse.ArgumentParser:
+    if parser is None:
+        parser = parse_command_line_audio_load()
+    default_device = "cuda" if torch.cuda.is_available() else "cpu"
+    iparse = parser.add_argument_group("Audio separation visualization")
+    iparse.add_argument("-e",  "--experiments", type=int, nargs="+", required=True,
+                        help="Experiment ids to be inferred sequentially")
+    iparse.add_argument("-p", "--interactive", action="store_true", help="Play = Interactive mode")
+    iparse.add_argument("-m", "--model-root", type=str, default=EXPERIMENT_STORAGE_ROOT)
+    iparse.add_argument("-d", "--device", type=str, default=default_device)
+    return parser
+
+
 def main(argv):
     batch = Batch(argv)
     batch.set_io_description(
@@ -229,7 +195,8 @@ def main(argv):
         output_help='output directory'
     )
     batch.set_multiprocessing_enabled(False)
-    args = parse_command_line(batch)
+    parser = parse_command_line()
+    args = batch.parse_args(parser)
     exp = args.experiments[0]
     device = args.device
     models_list = []
@@ -248,7 +215,7 @@ def main(argv):
         config_list.append(config)
         # batch.run(audio_separation_processing, [model], [config])
     logging.info("Load audio buffers:")
-    all_signals = batch.run(audio_loading)
+    all_signals = batch.run(audio_loading_batch)
     if not args.interactive:
         visualization(all_signals, models_list, config_list, device=device)
     else:
