@@ -1,8 +1,6 @@
 import torch
 import matplotlib.pyplot as plt
 import numpy as np
-from gyraudio.default_locations import SAMPLE_ROOT
-from gyraudio.audio_separation.visualization.pre_load_audio import audio_loading
 
 
 def get_silence_mask(
@@ -47,6 +45,8 @@ def visualize_silence_mask(sig: torch.Tensor, silence_thresh: float = 0.0001):
 
 
 if __name__ == "__main__":
+    from gyraudio.default_locations import SAMPLE_ROOT
+    from gyraudio.audio_separation.visualization.pre_load_audio import audio_loading
     from gyraudio.audio_separation.properties import CLEAN, BUFFERS
     sample_folder = SAMPLE_ROOT/"0009"
     signals = audio_loading(sample_folder, preload=True)
