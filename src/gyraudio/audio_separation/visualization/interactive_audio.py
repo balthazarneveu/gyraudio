@@ -1,16 +1,15 @@
 from batch_processing import Batch
 import argparse
-import sys
 from pathlib import Path
 from gyraudio.audio_separation.experiment_tracking.experiments import get_experience
 from gyraudio.audio_separation.experiment_tracking.storage import get_output_folder
 from gyraudio.default_locations import EXPERIMENT_STORAGE_ROOT
-from gyraudio.audio_separation.properties import SHORT_NAME, CLEAN, NOISY, MIXED, PREDICTED, ANNOTATIONS
+from gyraudio.audio_separation.properties import SHORT_NAME, CLEAN, NOISY, MIXED, ANNOTATIONS
 import torch
 from gyraudio.audio_separation.experiment_tracking.storage import load_checkpoint
 from gyraudio.audio_separation.visualization.pre_load_audio import (
     parse_command_line_audio_load, load_buffers, audio_loading_batch)
-from gyraudio.io.audio import save_audio_tensor
+
 from typing import List
 import numpy as np
 import logging
@@ -18,7 +17,7 @@ from interactive_pipe.data_objects.curves import Curve, SingleCurve
 from interactive_pipe import interactive, KeyboardControl
 from interactive_pipe.headless.pipeline import HeadlessPipeline
 from interactive_pipe.graphical.qt_gui import InteractivePipeQT
-from interactive_pipe import Control
+from gyraudio.audio_separation.visualization.audio_player import audio_player
 
 
 @interactive(
@@ -72,7 +71,6 @@ def zin(sig, zoom, center, num_samples=300):
     end_idx = min(N, center_idx + window//2)
     out = np.zeros(num_samples)
     skip_factor = max(1, int(native_ds/zoom))
-    # print("SKIP FACTOR!!!!!!!!!!!!!!!!!!!!!!!", skip_factor)
     trimmed = sig[start_idx:end_idx:skip_factor]
     out[:len(trimmed)] = trimmed[:num_samples]
     return out
@@ -85,52 +83,15 @@ def zin(sig, zoom, center, num_samples=300):
 def visualize_audio(signal: dict, mixed_signal, pred, zoom=1, center=0.5):
     """Create curves
     """
-    # dec = int(200/zoom)
     zval = 1.5**zoom
     clean = SingleCurve(y=zin(signal["buffers"][CLEAN][0, :], zval, center),
                         alpha=1., style="k-", linewidth=0.9, label="clean")
     noisy = SingleCurve(y=zin(signal["buffers"][NOISY][0, :], zval, center),
                         alpha=0.3, style="y--", linewidth=1, label="noisy")
     mixed = SingleCurve(y=zin(mixed_signal[0, :], zval, center), style="r-", alpha=0.1, linewidth=2, label="mixed")
-    # pred.y = pred.y[::dec]
     pred.y = zin(pred.y, zval, center)
     curves = [noisy, mixed, pred, clean]
     return Curve(curves, ylim=[-0.04, 0.04], xlabel="Time index", ylabel="Amplitude")
-
-
-HERE = Path(__file__).parent
-MUTE = "mute"
-LOGOS = {
-    PREDICTED: HERE/"play_logo_pred.png",
-    MIXED: HERE/"play_logo_mixed.png",
-    CLEAN: HERE/"play_logo_clean.png",
-    NOISY: HERE/"play_logo_noise.png",
-    MUTE: HERE/"mute_logo.png",
-}
-ICONS = [it for key, it in LOGOS.items()]
-KEYS = [key for key, it in LOGOS.items()]
-
-
-@interactive(
-    volume=(100, [0, 1000], "volume"),
-    player=Control(MUTE, KEYS, icons=ICONS))
-def audio_player(sig, mixed, pred, global_params={}, volume=100, player=MUTE):
-    if player == MUTE:
-        global_params["__stop"]()
-    else:
-        if player == CLEAN:
-            audio_track = sig["buffers"][CLEAN]
-        elif player == NOISY:
-            audio_track = sig["buffers"][NOISY]
-        elif player == MIXED:
-            audio_track = mixed
-        elif player == PREDICTED:
-            audio_track = pred
-        audio_track_path = "_tmp.wav"
-        save_audio_tensor(audio_track_path, volume/100.*audio_track,
-                          sampling_rate=global_params.get("sampling_rate", 8000))
-        global_params["__set_audio"](audio_track_path)
-        global_params["__play"]()
 
 
 def interactive_audio_separation_processing(signals, model_list, config_list):
@@ -213,7 +174,6 @@ def main(argv):
         config[SHORT_NAME] = short_name
         models_list.append(model)
         config_list.append(config)
-        # batch.run(audio_separation_processing, [model], [config])
     logging.info("Load audio buffers:")
     all_signals = batch.run(audio_loading_batch)
     if not args.interactive:
