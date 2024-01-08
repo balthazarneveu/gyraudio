@@ -6,7 +6,7 @@ from gyraudio.audio_separation.properties import CLEAN, NOISY, MIXED, PATHS, BUF
 from gyraudio.io.audio import load_audio_tensor
 
 
-def parse_command_line(batch: Batch) -> argparse.Namespace:
+def parse_command_line() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description='Batch audio processing',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
@@ -60,7 +60,6 @@ def main(argv):
         input_help='input audio files',
         output_help='output directory'
     )
-    # batch.set_multiprocessing_enabled(False)
     parser = parse_command_line(batch)
     batch.parse_args(parser)
     all_signals = batch.run(audio_loading_batch)
