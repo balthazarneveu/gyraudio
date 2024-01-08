@@ -44,3 +44,8 @@ CLEAN = "clean"
 NOISY = "noise"
 MIXED = "mixed"
 PREDICTED = "predicted"
+
+
+# MISC
+PATHS = "paths"
+BUFFERS = "buffers"
