@@ -112,7 +112,7 @@ def interactive_audio_separation_visualization(
 ):
     pip = HeadlessPipeline.from_function(interactive_audio_separation_processing, cache=False)
     if gui == "qt":
-        app = InteractivePipeQT(pipeline=pip, name="audio separation", size=None, audio=True)
+        app = InteractivePipeQT(pipeline=pip, name="audio separation", size=(1000, 1000), audio=True)
     else:
         logging.warning("No support for audio player with Matplotlib")
         app = InteractivePipeMatplotlib(pipeline=pip, name="audio separation", size=None, audio=False)
