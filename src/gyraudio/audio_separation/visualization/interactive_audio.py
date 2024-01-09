@@ -49,10 +49,9 @@ def remix(signals, dataset_mix=True, snr=0.):
 @interactive(
     model=KeyboardControl(value_default=0, value_range=[0, 99], keyup="pagedown", keydown="pageup")
 )
-def audio_sep_inference(mixed, models, configs, model: int = 0):
+def audio_sep_inference(mixed, models, configs, model: int = 0, device = "cuda"):
     selected_model = models[model % len(models)]
     config = configs[model % len(models)]
-    device = "cuda"
     short_name = config.get(SHORT_NAME, "")
     annotations = config.get(ANNOTATIONS, "")
     predicted_signal, predicted_noise = selected_model(mixed.to(device).unsqueeze(0))
@@ -94,10 +93,10 @@ def visualize_audio(signal: dict, mixed_signal, pred, zoom=1, center=0.5):
     return Curve(curves, ylim=[-0.04, 0.04], xlabel="Time index", ylabel="Amplitude")
 
 
-def interactive_audio_separation_processing(signals, model_list, config_list):
+def interactive_audio_separation_processing(signals, model_list, config_list, device = "cuda"):
     sig = signal_selector(signals)
     mixed = remix(sig)
-    pred, pred_curve = audio_sep_inference(mixed, model_list, config_list)
+    pred, pred_curve = audio_sep_inference(mixed, model_list, config_list, device=device)
     curve = visualize_audio(sig, mixed, pred_curve)
     audio_player(sig, mixed, pred)
     return curve
@@ -111,7 +110,7 @@ def interactive_audio_separation_visualization(
 ):
     pip = HeadlessPipeline.from_function(interactive_audio_separation_processing, cache=False)
     app = InteractivePipeQT(pipeline=pip, name="audio separation", size=None, audio=True)
-    app(all_signals, model_list, config_list)
+    app(all_signals, model_list, config_list, device=device)
 
 
 def visualization(
