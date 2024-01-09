@@ -17,6 +17,7 @@ from interactive_pipe.data_objects.curves import Curve, SingleCurve
 from interactive_pipe import interactive, KeyboardControl
 from interactive_pipe.headless.pipeline import HeadlessPipeline
 from interactive_pipe.graphical.qt_gui import InteractivePipeQT
+from interactive_pipe.graphical.mpl_gui import InteractivePipeMatplotlib
 from gyraudio.audio_separation.visualization.audio_player import audio_player
 
 
@@ -107,10 +108,15 @@ def interactive_audio_separation_visualization(
         all_signals: List[dict],
         model_list: List[torch.nn.Module],
         config_list: List[dict],
-        device="cuda"
+        device="cuda",
+        gui="qt"
 ):
     pip = HeadlessPipeline.from_function(interactive_audio_separation_processing, cache=False)
-    app = InteractivePipeQT(pipeline=pip, name="audio separation", size=None, audio=True)
+    if gui == "qt":
+        app = InteractivePipeQT(pipeline=pip, name="audio separation", size=None, audio=True)
+    else:
+        logging.warning("No support for audio player with Matplotlib")
+        app = InteractivePipeMatplotlib(pipeline=pip, name="audio separation", size=None, audio=False)
     app(all_signals, model_list, config_list)
 
 
@@ -146,6 +152,7 @@ def parse_command_line(parser: Batch = None) -> argparse.ArgumentParser:
     iparse.add_argument("-p", "--interactive", action="store_true", help="Play = Interactive mode")
     iparse.add_argument("-m", "--model-root", type=str, default=EXPERIMENT_STORAGE_ROOT)
     iparse.add_argument("-d", "--device", type=str, default=default_device)
+    iparse.add_argument("-gui", "--gui", type=str, default="qt", choices=["qt", "mpl"])
     return parser
 
 
@@ -179,4 +186,4 @@ def main(argv):
     if not args.interactive:
         visualization(all_signals, models_list, config_list, device=device)
     else:
-        interactive_audio_separation_visualization(all_signals, models_list, config_list, device=device)
+        interactive_audio_separation_visualization(all_signals, models_list, config_list, device=device, gui=args.gui)
