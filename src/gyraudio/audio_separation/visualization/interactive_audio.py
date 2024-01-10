@@ -30,6 +30,7 @@ def signal_selector(signals, idx=0, global_params={}):
     if "buffers" not in signal:
         load_buffers(signal)
     global_params["sampling_rate"] = signal["sampling_rate"]
+    global_params["mixed_snr"] = signal.get("mixed_snr", np.NaN)
     return signal
 
 
@@ -92,7 +93,7 @@ def zin(sig, zoom, center, num_samples=300):
     center=KeyboardControl(value_default=0.5, value_range=[0., 1.], step=0.01, keyup="6", keydown="4"),
     zoom=KeyboardControl(value_default=0., value_range=[0., 11.], step=1, keyup="+", keydown="-")
 )
-def visualize_audio(signal: dict, mixed_signal, pred, zoom=1, center=0.5):
+def visualize_audio(signal: dict, mixed_signal, pred, zoom=1, center=0.5, global_params={}):
     """Create curves
     """
     zval = 1.5**zoom
@@ -103,7 +104,8 @@ def visualize_audio(signal: dict, mixed_signal, pred, zoom=1, center=0.5):
     mixed = SingleCurve(y=zin(mixed_signal[0, :], zval, center), style="r-", alpha=0.1, linewidth=2, label="mixed")
     pred.y = zin(pred.y, zval, center)
     curves = [noisy, mixed, pred, clean]
-    return Curve(curves, ylim=[-0.04, 0.04], xlabel="Time index", ylabel="Amplitude")
+    title = f"Premixed SNR : {global_params['mixed_snr']:.1f} dB"
+    return Curve(curves, ylim=[-0.04, 0.04], xlabel="Time index", ylabel="Amplitude", title=title)
 
 
 def interactive_audio_separation_processing(signals, model_list, config_list):

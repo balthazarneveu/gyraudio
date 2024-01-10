@@ -13,7 +13,9 @@ DATALOADER = "dataloader"
 
 
 # Augmentation types
-AUG_TRIM = "trim"
+AUG_TRIM = "trim"  # trim batches to arbitrary length
+AUG_AWGN = "awgn"  # add white gaussian noise
+AUG_RESCALE = "rescale"  # rescale all signals arbitrarily
 
 # Training configuration properties (keys)
 
