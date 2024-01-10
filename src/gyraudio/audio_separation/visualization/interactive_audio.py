@@ -25,6 +25,7 @@ from gyraudio.audio_separation.visualization.audio_player import audio_player
     idx=KeyboardControl(value_default=0, value_range=[0, 1000], modulo=True, keyup="8", keydown="2")
 )
 def signal_selector(signals, idx=0, global_params={}):
+    # signals are loaded in CPU
     signal = signals[idx % len(signals)]
     if "buffers" not in signal:
         load_buffers(signal)
@@ -48,15 +49,26 @@ def remix(signals, dataset_mix=True, snr=0.):
 
 
 @interactive(
+    device=("cuda", ["cpu", "cuda"]) if torch.cuda.is_available() else ("cpu", ["cpu"])
+)
+def select_device(device="cpu", global_params={}):
+    global_params["device"] = device
+
+
+@interactive(
     model=KeyboardControl(value_default=0, value_range=[0, 99], keyup="pagedown", keydown="pageup")
 )
-def audio_sep_inference(mixed, models, configs, model: int = 0, device = "cuda"):
+def audio_sep_inference(mixed, models, configs, model: int = 0, global_params={}):
     selected_model = models[model % len(models)]
     config = configs[model % len(models)]
     short_name = config.get(SHORT_NAME, "")
     annotations = config.get(ANNOTATIONS, "")
-    predicted_signal, predicted_noise = selected_model(mixed.to(device).unsqueeze(0))
-    predicted_signal = predicted_signal.squeeze(0)
+    device = global_params.get("device", "cpu")
+    with torch.no_grad():
+        selected_model.eval()
+        selected_model.to(device)
+        predicted_signal, predicted_noise = selected_model(mixed.to(device).unsqueeze(0))
+        predicted_signal = predicted_signal.squeeze(0)
     pred_curve = SingleCurve(y=predicted_signal[0, :].detach().cpu().numpy(),
                              style="g-", label=f"predicted_{short_name} {annotations}")
     return predicted_signal, pred_curve
@@ -94,10 +106,11 @@ def visualize_audio(signal: dict, mixed_signal, pred, zoom=1, center=0.5):
     return Curve(curves, ylim=[-0.04, 0.04], xlabel="Time index", ylabel="Amplitude")
 
 
-def interactive_audio_separation_processing(signals, model_list, config_list, device = "cuda"):
+def interactive_audio_separation_processing(signals, model_list, config_list):
     sig = signal_selector(signals)
     mixed = remix(sig)
-    pred, pred_curve = audio_sep_inference(mixed, model_list, config_list, device=device)
+    select_device()
+    pred, pred_curve = audio_sep_inference(mixed, model_list, config_list)
     curve = visualize_audio(sig, mixed, pred_curve)
     audio_player(sig, mixed, pred)
     return curve
@@ -107,7 +120,6 @@ def interactive_audio_separation_visualization(
         all_signals: List[dict],
         model_list: List[torch.nn.Module],
         config_list: List[dict],
-        device="cuda",
         gui="qt"
 ):
     pip = HeadlessPipeline.from_function(interactive_audio_separation_processing, cache=False)
@@ -116,7 +128,7 @@ def interactive_audio_separation_visualization(
     else:
         logging.warning("No support for audio player with Matplotlib")
         app = InteractivePipeMatplotlib(pipeline=pip, name="audio separation", size=None, audio=False)
-    app(all_signals, model_list, config_list, device=device)
+    app(all_signals, model_list, config_list)
 
 
 def visualization(
@@ -185,4 +197,4 @@ def main(argv):
     if not args.interactive:
         visualization(all_signals, models_list, config_list, device=device)
     else:
-        interactive_audio_separation_visualization(all_signals, models_list, config_list, device=device, gui=args.gui)
+        interactive_audio_separation_visualization(all_signals, models_list, config_list, gui=args.gui)
