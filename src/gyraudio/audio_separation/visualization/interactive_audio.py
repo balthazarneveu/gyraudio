@@ -86,15 +86,20 @@ def audio_sep_inference(mixed, models, configs, model: int = 0, global_params={}
     return predicted_signal, pred_curve
 
 
-def zin(sig, zoom, center, num_samples=300):
+def get_trim(sig, zoom, center, num_samples=300):
     N = len(sig)
     native_ds = N/num_samples
     center_idx = int(center*N)
     window = int(num_samples/zoom*native_ds)
     start_idx = max(0, center_idx - window//2)
     end_idx = min(N, center_idx + window//2)
-    out = np.zeros(num_samples)
     skip_factor = max(1, int(native_ds/zoom))
+    return start_idx, end_idx, skip_factor
+
+
+def zin(sig, zoom, center, num_samples=300):
+    start_idx, end_idx, skip_factor = get_trim(sig, zoom, center, num_samples=num_samples)
+    out = np.zeros(num_samples)
     trimmed = sig[start_idx:end_idx:skip_factor]
     out[:len(trimmed)] = trimmed[:num_samples]
     return out
@@ -108,6 +113,8 @@ def visualize_audio(signal: dict, mixed_signal, pred, zoom=1, center=0.5, global
     """Create curves
     """
     zval = 1.5**zoom
+    start_idx, end_idx, _skip_factor = get_trim(signal["buffers"][CLEAN][0, :], zval, center)
+    global_params["trim"] = dict(start=start_idx, end=end_idx)
     clean = SingleCurve(y=zin(signal["buffers"][CLEAN][0, :], zval, center),
                         alpha=1., style="k-", linewidth=0.9, label="clean")
     noisy = SingleCurve(y=zin(signal["buffers"][NOISY][0, :], zval, center),
