@@ -162,7 +162,8 @@ def parse_command_line(parser: Batch = None) -> argparse.ArgumentParser:
                         help="Experiment ids to be inferred sequentially")
     iparse.add_argument("-p", "--interactive", action="store_true", help="Play = Interactive mode")
     iparse.add_argument("-m", "--model-root", type=str, default=EXPERIMENT_STORAGE_ROOT)
-    iparse.add_argument("-d", "--device", type=str, default=default_device)
+    iparse.add_argument("-d", "--device", type=str, default=default_device,
+                        choices=["cpu", "cuda"] if default_device == "cuda" else ["cpu"])
     iparse.add_argument("-gui", "--gui", type=str, default="qt", choices=["qt", "mpl"])
     return parser
 
@@ -188,7 +189,7 @@ def main(argv):
         assert exp_dir.exists(), f"Experiment {short_name} does not exist in {model_dir}"
         model.eval()
         model.to(device)
-        model, __optimizer, epoch, config = load_checkpoint(model, exp_dir, epoch=None)
+        model, __optimizer, epoch, config = load_checkpoint(model, exp_dir, epoch=None, device=args.device)
         config[SHORT_NAME] = short_name
         models_list.append(model)
         config_list.append(config)

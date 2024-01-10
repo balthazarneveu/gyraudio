@@ -33,13 +33,13 @@ def checkpoint_paths(exp_dir: Path, epoch=None):
     return model_checkpoint, optimizer_checkpoint, epoch
 
 
-def load_checkpoint(model, exp_dir: Path, optimizer=None, epoch: int = None):
+def load_checkpoint(model, exp_dir: Path, optimizer=None, epoch: int = None, device="cuda" if torch.cuda.is_available() else "cpu"):
     config = {}
     model_checkpoint, optimizer_checkpoint, epoch = checkpoint_paths(exp_dir, epoch=epoch)
-    model_state_dict = torch.load(model_checkpoint)
+    model_state_dict = torch.load(model_checkpoint, map_location=torch.device(device))
     model.load_state_dict(model_state_dict[MODEL])
     if optimizer is not None:
-        optimizer_state_dict = torch.load(optimizer_checkpoint)
+        optimizer_state_dict = torch.load(optimizer_checkpoint, map_location=torch.device(device))
         optimizer.load_state_dict(optimizer_state_dict[OPTIMIZER])
         config = optimizer_state_dict[CONFIGURATION]
     return model, optimizer, epoch, config

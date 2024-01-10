@@ -18,7 +18,7 @@ def launch_infer(exp: int, device: str = "cuda", model_dir: Path = None, output_
     # assert exists, f"Experiment {short_name} does not exist in {model_dir}"
     model.eval()
     model.to(device)
-    model, optimizer, epoch, config = load_checkpoint(model, exp_dir, epoch=None)
+    model, optimizer, epoch, config = load_checkpoint(model, exp_dir, epoch=None, device=device)
     if output_dir is not None:
         save_dir = output_dir/(exp_dir.name+"_infer"+f"_epoch_{epoch:04d}")
         save_dir.mkdir(parents=True, exist_ok=True)
