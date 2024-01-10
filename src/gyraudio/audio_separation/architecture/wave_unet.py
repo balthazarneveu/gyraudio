@@ -12,14 +12,16 @@ def get_non_linearity(activation: str):
 
 
 class BaseConvolutionBlock(torch.nn.Module):
-    def __init__(self, ch_in, ch_out: int, k_size: int, activation="LeakyReLU") -> None:
+    def __init__(self, ch_in, ch_out: int, k_size: int, activation="LeakyReLU", dropout: float = 0) -> None:
         super().__init__()
         self.conv = torch.nn.Conv1d(ch_in, ch_out, k_size, padding=k_size//2)
         self.non_linearity = get_non_linearity(activation)
+        self.dropout = torch.nn.Dropout(p=dropout)
 
     def forward(self, x_in: torch.Tensor) -> torch.Tensor:
         x = self.conv(x_in)  # [N, ch_in, T] -> [N, ch_in+channels_extension, T]
         x = self.non_linearity(x)
+        x = self.dropout(x)
         return x
 
 
@@ -27,14 +29,15 @@ class EncoderStage(torch.nn.Module):
     """Conv (and extend channels), downsample 2 by skipping samples
     """
 
-    def __init__(self, ch_in: int, ch_out: int, k_size: int = 15) -> None:
+    def __init__(self, ch_in: int, ch_out: int, k_size: int = 15, dropout: float = 0) -> None:
 
         super().__init__()
 
-        self.conv = BaseConvolutionBlock(ch_in, ch_out, k_size=k_size)
+        self.conv_block = BaseConvolutionBlock(ch_in, ch_out, k_size=k_size)
 
     def forward(self, x):
-        x = self.conv(x)
+        x = self.conv_block(x)
+
         x_ds = x[..., ::2]
         # ch_out = ch_in+channels_extension
         return x, x_ds
@@ -44,12 +47,12 @@ class DecoderStage(torch.nn.Module):
     """Upsample by 2, Concatenate with skip connection, Conv (and shrink channels)
     """
 
-    def __init__(self, ch_in: int, ch_out: int, k_size: int = 5) -> None:
+    def __init__(self, ch_in: int, ch_out: int, k_size: int = 5, dropout: float = 0.) -> None:
         """Decoder stage
         """
 
         super().__init__()
-        self.conv = BaseConvolutionBlock(ch_in, ch_out, k_size=k_size)
+        self.conv_block = BaseConvolutionBlock(ch_in, ch_out, k_size=k_size, dropout=dropout)
         self.upsample = torch.nn.Upsample(scale_factor=2, mode="linear", align_corners=True)
 
     def forward(self, x_ds: torch.Tensor, x_skip: torch.Tensor) -> torch.Tensor:
@@ -73,6 +76,7 @@ class WaveUNet(SeparationModel):
                  k_conv_ds: int = 15,
                  k_conv_us: int = 5,
                  num_layers: int = 6,
+                 dropout: float = 0.0,
                  ) -> None:
         super().__init__()
         self.need_split = ch_out != ch_in
@@ -86,12 +90,14 @@ class WaveUNet(SeparationModel):
             ch_o = (level+1)*channels_extension
             if level < num_layers:
                 # Skipping last encoder since we defined the first one outside the loop
-                self.encoder_list.append(EncoderStage(ch_i, ch_o, k_size=k_conv_ds))
-            self.decoder_list.append(DecoderStage(ch_o+ch_i, ch_i, k_size=k_conv_us))
+                self.encoder_list.append(EncoderStage(ch_i, ch_o, k_size=k_conv_ds, dropout=dropout))
+            self.decoder_list.append(DecoderStage(ch_o+ch_i, ch_i, k_size=k_conv_us, dropout=dropout))
         self.bottleneck = BaseConvolutionBlock(
             num_layers*channels_extension,
             (num_layers+1)*channels_extension,
-            k_size=k_conv_ds)
+            k_size=k_conv_ds,
+            dropout=dropout)
+        self.dropout = torch.nn.Dropout(p=dropout)
         self.target_modality_conv = torch.nn.Conv1d(channels_extension+ch_in, ch_out, 1)  # conv1x1 channel mixer
 
     def forward(self, x_in: torch.Tensor) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
@@ -123,6 +129,7 @@ class WaveUNet(SeparationModel):
         # print(x_dec.shape)
         x_dec = torch.cat([x_dec, x_in], dim=1)
         # print(x_dec.shape)
+        x_dec = self.dropout(x_dec)
         demuxed = self.target_modality_conv(x_dec)
         # print(demuxed.shape)
         if self.need_split:
