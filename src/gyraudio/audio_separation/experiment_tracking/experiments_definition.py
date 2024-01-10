@@ -112,7 +112,7 @@ def exp_wave_unet(config: dict,
     return config, model
 
 
-@registered_experiment(major=300)
+@registered_experiment(major=300, failed=True)
 def exp_300_waveunet(config, model: bool = None, minor=None):
     config[BATCH_SIZE] = [16, 16, 16]
     config[EPOCHS] = 60
@@ -121,7 +121,7 @@ def exp_300_waveunet(config, model: bool = None, minor=None):
     return config, model
 
 
-@registered_experiment(major=301)
+@registered_experiment(major=301, failed=True)
 def exp_301_waveunet(config, model: bool = None, minor=None):
     # OVERFIT 1M params
     config[BATCH_SIZE] = [16, 16, 16]
@@ -131,7 +131,7 @@ def exp_301_waveunet(config, model: bool = None, minor=None):
     return config, model
 
 
-@registered_experiment(major=302)
+@registered_experiment(major=302, failed=True)
 def exp_302_waveunet(config, model: bool = None, minor=None):
     # OVERFIT 2.3M params
     config[BATCH_SIZE] = [16, 16, 16]
@@ -141,7 +141,7 @@ def exp_302_waveunet(config, model: bool = None, minor=None):
     return config, model
 
 
-@registered_experiment(major=303)
+@registered_experiment(major=303, failed=True)
 def exp_303_waveunet(config, model: bool = None, minor=None):
     # DIVERGE, WEIGHT DECAY DOES NOT WORK
     config[BATCH_SIZE] = [16, 16, 16]
@@ -153,7 +153,7 @@ def exp_303_waveunet(config, model: bool = None, minor=None):
     return config, model
 
 
-@registered_experiment(major=304)
+@registered_experiment(major=304, failed=True)
 def exp_304_waveunet(config, model: bool = None, minor=None):
     config[BATCH_SIZE] = [16, 16, 16]
     config[EPOCHS] = 60
@@ -162,7 +162,7 @@ def exp_304_waveunet(config, model: bool = None, minor=None):
     return config, model
 
 
-@registered_experiment(major=305)
+@registered_experiment(major=305, failed=True)
 def exp_305_waveunet(config, model: bool = None, minor=None):
     # OVERFIT 2.3M params
     config[BATCH_SIZE] = [16, 16, 16]
