@@ -33,7 +33,8 @@ def checkpoint_paths(exp_dir: Path, epoch=None):
     return model_checkpoint, optimizer_checkpoint, epoch
 
 
-def load_checkpoint(model, exp_dir: Path, optimizer=None, epoch: int = None, device="cuda" if torch.cuda.is_available() else "cpu"):
+def load_checkpoint(model, exp_dir: Path, optimizer=None, epoch: int = None,
+                    device="cuda" if torch.cuda.is_available() else "cpu"):
     config = {}
     model_checkpoint, optimizer_checkpoint, epoch = checkpoint_paths(exp_dir, epoch=epoch)
     model_state_dict = torch.load(model_checkpoint, map_location=torch.device(device))

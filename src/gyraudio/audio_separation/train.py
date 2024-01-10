@@ -1,7 +1,7 @@
 from gyraudio.audio_separation.experiment_tracking.experiments import get_experience
 from gyraudio.audio_separation.parser import shared_parser
 from gyraudio.audio_separation.properties import (
-    TRAIN, TEST, EPOCHS, OPTIMIZER, NAME, MAX_STEPS_PER_EPOCH, LOSS, LOSS_L2
+    TRAIN, TEST, EPOCHS, OPTIMIZER, NAME, MAX_STEPS_PER_EPOCH, LOSS_L2
 )
 from gyraudio.default_locations import EXPERIMENT_STORAGE_ROOT
 from gyraudio.audio_separation.experiment_tracking.storage import get_output_folder, save_checkpoint
