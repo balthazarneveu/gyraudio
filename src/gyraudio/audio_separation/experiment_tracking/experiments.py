@@ -1,7 +1,7 @@
 from gyraudio.default_locations import MIXED_AUDIO_ROOT
 from gyraudio.audio_separation.properties import (
     TRAIN, TEST, VALID, NAME, EPOCHS, LEARNING_RATE,
-    OPTIMIZER, BATCH_SIZE, DATALOADER,
+    OPTIMIZER, BATCH_SIZE, DATALOADER, AUGMENTATION,
     SHORT_NAME
 )
 from gyraudio.audio_separation.data.remixed import RemixedAudioDataset
@@ -54,7 +54,8 @@ def get_experience(exp_major: int, exp_minor: int = 0, dry_run=False) -> Tuple[s
                 audio_root=mixed_audio_root,
                 mode=TRAIN,
                 shuffle=True,
-                batch_size=config[BATCH_SIZE][TRAIN]
+                batch_size=config[BATCH_SIZE][TRAIN],
+                augmentation=config[DATALOADER].get(AUGMENTATION)
             ),
             TEST: get_config_dataloader(
                 audio_root=mixed_audio_root,
