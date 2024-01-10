@@ -18,7 +18,7 @@ from interactive_pipe import interactive, KeyboardControl, Control
 from interactive_pipe.headless.pipeline import HeadlessPipeline
 from interactive_pipe.graphical.qt_gui import InteractivePipeQT
 from interactive_pipe.graphical.mpl_gui import InteractivePipeMatplotlib
-from gyraudio.audio_separation.visualization.audio_player import audio_player
+from gyraudio.audio_separation.visualization.audio_player import audio_selector, audio_trim, audio_player
 default_device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
@@ -133,7 +133,9 @@ def interactive_audio_separation_processing(signals, model_list, config_list):
     select_device()
     pred, pred_curve = audio_sep_inference(mixed, model_list, config_list)
     curve = visualize_audio(sig, mixed, pred_curve)
-    audio_player(sig, mixed, pred)
+    sound = audio_selector(sig, mixed, pred)
+    trimmed_sound = audio_trim(sound)
+    audio_player(trimmed_sound)
     return curve
 
 
