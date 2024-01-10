@@ -11,6 +11,10 @@ SNR_FILTER = "snr_filter"
 AUGMENTATION = "augmentation"
 DATALOADER = "dataloader"
 
+
+# Augmentation types
+AUG_TRIM = "trim"
+
 # Training configuration properties (keys)
 
 OPTIMIZER = "optimizer"

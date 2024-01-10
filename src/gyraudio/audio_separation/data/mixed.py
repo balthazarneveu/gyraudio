@@ -1,8 +1,9 @@
 from gyraudio.audio_separation.data.dataset import AudioDataset
-from typing import Tuple
+
 import logging
-from torch import Tensor
+import torch
 import torchaudio
+from typing import Tuple
 
 
 class MixedAudioDataset(AudioDataset):
@@ -23,7 +24,7 @@ class MixedAudioDataset(AudioDataset):
             print("Filtered", len(self.file_list), self.snr_filter)
         self.sampling_rate = None
 
-    def __getitem__(self, idx: int) -> Tuple[Tensor, Tensor, Tensor]:
+    def __getitem__(self, idx: int) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         mixed_audio_path, signal_path, noise_path = self.file_list[idx]
         assert mixed_audio_path.exists()
         assert signal_path.exists()
