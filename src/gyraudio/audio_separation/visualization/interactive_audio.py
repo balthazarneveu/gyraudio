@@ -4,7 +4,7 @@ from pathlib import Path
 from gyraudio.audio_separation.experiment_tracking.experiments import get_experience
 from gyraudio.audio_separation.experiment_tracking.storage import get_output_folder
 from gyraudio.default_locations import EXPERIMENT_STORAGE_ROOT
-from gyraudio.audio_separation.properties import SHORT_NAME, CLEAN, NOISY, MIXED, ANNOTATIONS
+from gyraudio.audio_separation.properties import SHORT_NAME, CLEAN, NOISY, MIXED, PREDICTED, ANNOTATIONS
 import torch
 from gyraudio.audio_separation.experiment_tracking.storage import load_checkpoint
 from gyraudio.audio_separation.visualization.pre_load_audio import (
@@ -115,12 +115,24 @@ def visualize_audio(signal: dict, mixed_signal, pred, zoom=1, center=0.5, global
     zval = 1.5**zoom
     start_idx, end_idx, _skip_factor = get_trim(signal["buffers"][CLEAN][0, :], zval, center)
     global_params["trim"] = dict(start=start_idx, end=end_idx)
+    selected = global_params.get("selected_audio", MIXED)
     clean = SingleCurve(y=zin(signal["buffers"][CLEAN][0, :], zval, center),
-                        alpha=1., style="k-", linewidth=0.9, label="clean")
+                        alpha=1.,
+                        style="k-",
+                        linewidth=0.9,
+                        label=("*" if selected == CLEAN else " ")+"clean")
     noisy = SingleCurve(y=zin(signal["buffers"][NOISY][0, :], zval, center),
-                        alpha=0.3, style="y--", linewidth=1, label="noisy")
-    mixed = SingleCurve(y=zin(mixed_signal[0, :], zval, center), style="r-", alpha=0.1, linewidth=2, label="mixed")
+                        alpha=0.3,
+                        style="y--",
+                        linewidth=1,
+                        label=("*" if selected == NOISY else " ") + "noisy"
+                        )
+    mixed = SingleCurve(y=zin(mixed_signal[0, :], zval, center), style="r-",
+                        alpha=0.1,
+                        linewidth=2,
+                        label=("*" if selected == MIXED else " ") + "mixed")
     pred.y = zin(pred.y, zval, center)
+    pred.label = ("*" if selected ==  PREDICTED else " ") + pred.label
     curves = [noisy, mixed, pred, clean]
     title = f"Premixed SNR : {global_params['mixed_snr']:.1f} dB"
     return Curve(curves, ylim=[-0.04, 0.04], xlabel="Time index", ylabel="Amplitude", title=title)
@@ -132,8 +144,8 @@ def interactive_audio_separation_processing(signals, model_list, config_list):
     # sig, mixed = augment(sig, mixed)
     select_device()
     pred, pred_curve = audio_sep_inference(mixed, model_list, config_list)
-    curve = visualize_audio(sig, mixed, pred_curve)
     sound = audio_selector(sig, mixed, pred)
+    curve = visualize_audio(sig, mixed, pred_curve)
     trimmed_sound = audio_trim(sound)
     audio_player(trimmed_sound)
     return curve
