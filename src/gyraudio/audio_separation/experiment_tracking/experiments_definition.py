@@ -7,7 +7,7 @@ from gyraudio.audio_separation.properties import (
     OPTIMIZER,
     DATALOADER,
     WEIGHT_DECAY,
-    AUGMENTATION, AUG_TRIM
+    AUGMENTATION, AUG_TRIM, AUG_AWGN, AUG_RESCALE
 )
 from gyraudio.audio_separation.experiment_tracking.experiments_decorator import (
     registered_experiment, REGISTERED_EXPERIMENTS_LIST
@@ -202,6 +202,17 @@ def exp_308_waveunet(config, model: bool = None, minor=None):
     config[EPOCHS] = 60
     config, model = exp_wave_unet(config, model=model, num_layers=7, channels_extension=24)
     config[DATALOADER][AUGMENTATION] = [AUG_TRIM]
+    # 7 layers, ext +24 - Nvidia RTX3060 6Gb RAM - 16 batch size
+    return config, model
+
+
+@registered_experiment(major=309)
+def exp_309_waveunet(config, model: bool = None, minor=None):
+    # https://github.com/balthazarneveu/gyraudio/issues/13
+    config[BATCH_SIZE] = [16, 16, 16]
+    config[EPOCHS] = 120
+    config, model = exp_wave_unet(config, model=model, num_layers=7, channels_extension=24)
+    config[DATALOADER][AUGMENTATION] = [AUG_TRIM, AUG_AWGN, AUG_RESCALE]
     # 7 layers, ext +24 - Nvidia RTX3060 6Gb RAM - 16 batch size
     return config, model
 
