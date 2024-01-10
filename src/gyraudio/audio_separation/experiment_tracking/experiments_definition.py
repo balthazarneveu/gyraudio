@@ -180,6 +180,17 @@ def exp_306_waveunet(config, model: bool = None, minor=None):
     config[EPOCHS] = 60
     config, model = exp_wave_unet(config, model=model, num_layers=7, channels_extension=24, dropout=0.2)
     # 7 layers, ext +24 - Nvidia RTX3060 6Gb RAM - 16 batch size
+    # Overfitting at 34 epochs
+    return config, model
+
+
+@registered_experiment(major=307)
+def exp_307_waveunet(config, model: bool = None, minor=None):
+    # https://github.com/balthazarneveu/gyraudio/issues/13
+    config[BATCH_SIZE] = [16, 16, 16]
+    config[EPOCHS] = 60
+    config, model = exp_wave_unet(config, model=model, num_layers=7, channels_extension=24, dropout=0.5)
+    # 7 layers, ext +24 - Nvidia RTX3060 6Gb RAM - 16 batch size
     return config, model
 
 # ------------------ TRANSFORMER ------------------
