@@ -14,11 +14,12 @@ from typing import List
 import numpy as np
 import logging
 from interactive_pipe.data_objects.curves import Curve, SingleCurve
-from interactive_pipe import interactive, KeyboardControl
+from interactive_pipe import interactive, KeyboardControl, Control
 from interactive_pipe.headless.pipeline import HeadlessPipeline
 from interactive_pipe.graphical.qt_gui import InteractivePipeQT
 from interactive_pipe.graphical.mpl_gui import InteractivePipeMatplotlib
 from gyraudio.audio_separation.visualization.audio_player import audio_player
+default_device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 @interactive(
@@ -49,10 +50,20 @@ def remix(signals, dataset_mix=True, snr=0.):
     return mixed_signal
 
 
-@interactive(
-    device=("cuda", ["cpu", "cuda"]) if torch.cuda.is_available() else ("cpu", ["cpu"])
-)
-def select_device(device="cpu", global_params={}):
+@interactive(std_dev=Control(0., value_range=[0., 0.1], name="extra noise std", step=0.0001),
+             amplify=(1., [0., 10.], "amplification of everything"))
+def augment(signals, mixed, std_dev=0., amplify=1.):
+    signals["buffers"][MIXED] *= amplify
+    signals["buffers"][NOISY] *= amplify
+    signals["buffers"][CLEAN] *= amplify
+    mixed = mixed*amplify+torch.randn_like(mixed)*std_dev
+    return signals, mixed
+
+
+# @interactive(
+#     device=("cuda", ["cpu", "cuda"]) if default_device == "cuda" else ("cpu", ["cpu"])
+# )
+def select_device(device=default_device, global_params={}):
     global_params["device"] = device
 
 
@@ -111,6 +122,7 @@ def visualize_audio(signal: dict, mixed_signal, pred, zoom=1, center=0.5, global
 def interactive_audio_separation_processing(signals, model_list, config_list):
     sig = signal_selector(signals)
     mixed = remix(sig)
+    # sig, mixed = augment(sig, mixed)
     select_device()
     pred, pred_curve = audio_sep_inference(mixed, model_list, config_list)
     curve = visualize_audio(sig, mixed, pred_curve)
