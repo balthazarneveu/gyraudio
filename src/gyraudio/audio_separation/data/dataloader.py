@@ -1,8 +1,9 @@
 from torch.utils.data import DataLoader
 from gyraudio.audio_separation.data.mixed import MixedAudioDataset
+from gyraudio.audio_separation.data.dataset import trim_collate_mix
 from typing import Optional, List
 from gyraudio.audio_separation.properties import (
-    DATA_PATH, AUGMENTATION, SNR_FILTER, SHUFFLE, BATCH_SIZE, TRAIN, VALID, TEST
+    DATA_PATH, AUGMENTATION, SNR_FILTER, SHUFFLE, BATCH_SIZE, TRAIN, VALID, TEST, AUG_TRIM
 )
 from gyraudio import root_dir
 RAW_AUDIO_ROOT = root_dir/"__data_source_separation"/"voice_origin"
@@ -17,10 +18,14 @@ def get_dataloader(configurations: dict, audio_dataset=MixedAudioDataset):
             augmentation_config=configuration[AUGMENTATION],
             snr_filter=configuration[SNR_FILTER]
         )
+        collate_fn = None
+        if configuration[AUGMENTATION].get(AUG_TRIM, False):
+            collate_fn = trim_collate_mix
         dl = DataLoader(
             dataset,
             shuffle=configuration[SHUFFLE],
-            batch_size=configuration[BATCH_SIZE]
+            batch_size=configuration[BATCH_SIZE],
+            collate_fn=collate_fn
         )
         dataloaders[mode] = dl
     return dataloaders

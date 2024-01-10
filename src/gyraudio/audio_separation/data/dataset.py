@@ -1,7 +1,9 @@
 from torch.utils.data import Dataset
 from pathlib import Path
 from typing import Optional
-from torch import Tensor
+import torch
+from torch.utils.data import default_collate
+from typing import Tuple
 
 
 class AudioDataset(Dataset):
@@ -33,5 +35,35 @@ class AudioDataset(Dataset):
     def __len__(self):
         return self.length
 
-    def __getitem__(self, idx: int) -> Tensor:
+    def __getitem__(self, idx: int) -> torch.Tensor:
         raise NotImplementedError("__getitem__ method must be implemented")
+
+
+def trim_collate_mix(batch) -> Tuple[torch.Tensor, torch.Tensor]:
+    """Collate function to allow trimming (=crop the time dimension) of the signals in a batch.
+
+    Args:
+    batch (list): A list of tuples (triplets), where each tuple contain:
+    - mixed_audio_signal
+    - clean_audio_signal
+    - noise_audio_signal
+
+    Returns:
+    - Tensor: A batch of mixed_audio_signal, trimmed to the same length.
+    - Tensor: A batch of clean_audio_signal
+    - Tensor: A batch of noise_audio_signal
+    """
+
+    # Find the length of the shortest signal in the batch
+    mixed_audio_signal, clean_audio_signal, noise_audio_signal = default_collate(batch)
+    length = mixed_audio_signal[0].shape[-1]
+    take_full_signal = torch.rand(1) > 0.5
+    if not take_full_signal:
+        trim_length = torch.randint(2048, length-1, (1,))
+        trim_length = trim_length-trim_length % 1024
+        start = torch.randint(0, length-trim_length, (1,))
+        end = start + trim_length
+        mixed_audio_signal = mixed_audio_signal[..., start:end]
+        clean_audio_signal = clean_audio_signal[..., start:end]
+        noise_audio_signal = noise_audio_signal[..., start:end]
+    return mixed_audio_signal, clean_audio_signal, noise_audio_signal

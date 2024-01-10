@@ -4,6 +4,7 @@ from gyraudio.audio_separation.properties import (
     OPTIMIZER, BATCH_SIZE, DATALOADER,
     SHORT_NAME
 )
+from gyraudio.audio_separation.data.remixed import RemixedAudioDataset
 from gyraudio.audio_separation.data import get_dataloader, get_config_dataloader
 from gyraudio.audio_separation.experiment_tracking.experiments_definition import get_experiment_generator
 import torch
@@ -62,6 +63,31 @@ def get_experience(exp_major: int, exp_minor: int = 0, dry_run=False) -> Tuple[s
                 batch_size=config[BATCH_SIZE][TEST]
             )
         })
+    elif config[DATALOADER][NAME] == "remix":
+        mixed_audio_root = MIXED_AUDIO_ROOT
+        dl_train = get_dataloader(
+            {
+                TRAIN: get_config_dataloader(
+                    audio_root=mixed_audio_root,
+                    mode=TRAIN,
+                    shuffle=True,
+                    batch_size=config[BATCH_SIZE][TRAIN]
+                )
+            },
+            audio_dataset=RemixedAudioDataset
+        )[TRAIN]
+        dl_test = get_dataloader({
+            TEST: get_config_dataloader(
+                audio_root=mixed_audio_root,
+                mode=TEST,
+                shuffle=False,
+                batch_size=config[BATCH_SIZE][TEST]
+            )
+        })[TEST]
+        dataloaders = {
+            TRAIN: dl_train,
+            TEST: dl_test
+        }
     else:
         raise NotImplementedError(f"Unknown dataloader {dataloader_name}")
     assert config[NAME] is not None

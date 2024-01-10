@@ -11,10 +11,16 @@ SNR_FILTER = "snr_filter"
 AUGMENTATION = "augmentation"
 DATALOADER = "dataloader"
 
+
+# Augmentation types
+AUG_TRIM = "trim"
+
 # Training configuration properties (keys)
 
 OPTIMIZER = "optimizer"
 LEARNING_RATE = "lr"
+WEIGHT_DECAY = "weight_decay"
+BETAS = "betas"
 EPOCHS = "epochs"
 BATCH_SIZE = "batch_size"
 MAX_STEPS_PER_EPOCH = "max_steps_per_epoch"
@@ -42,3 +48,8 @@ CLEAN = "clean"
 NOISY = "noise"
 MIXED = "mixed"
 PREDICTED = "predicted"
+
+
+# MISC
+PATHS = "paths"
+BUFFERS = "buffers"

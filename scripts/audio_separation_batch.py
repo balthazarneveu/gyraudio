@@ -64,7 +64,7 @@ def main(argv):
         assert exp_dir.exists(), f"Experiment {short_name} does not exist in {model_dir}"
         model.eval()
         model.to(device)
-        model, __optimizer, epoch, config = load_checkpoint(model, exp_dir, epoch=None)
+        model, __optimizer, epoch, config = load_checkpoint(model, exp_dir, epoch=None, device=args.device)
         config[SHORT_NAME] = short_name
         models_list.append(model)
         config_list.append(config)
