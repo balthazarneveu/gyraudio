@@ -26,7 +26,7 @@ class TransformerModel(SeparationModel):
 
         Args:
             nhead (int): number of heads in each of the MHA models
-            embedding_dim (int): D number of channels in the audio embeddings 
+            embedding_dim (int): D number of channels in the audio embeddings
                 = output of the filter bank
                 assume `embedding_dim` = `h_dim`
                 h_dim is the hidden dimension of the model.
