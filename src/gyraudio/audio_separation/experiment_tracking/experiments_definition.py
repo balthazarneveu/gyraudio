@@ -91,14 +91,18 @@ def exp_wave_unet(config: dict,
                   k_conv_ds: int = 15,
                   k_conv_us: int = 5,
                   num_layers: int = 4,
+                  dropout: float = 0.0,
                   model=None):
     config[NAME] = "Wave-UNet"
     config[ANNOTATIONS] = f"Wave-UNet-{num_layers}scales_h_ext={channels_extension}_k={k_conv_ds}ds-{k_conv_us}us"
+    if dropout > 0:
+        config[ANNOTATIONS] += f"-dr{dropout:.1e}"
     config["Architecture"] = {
         "k_conv_us": k_conv_us,
         "k_conv_ds": k_conv_ds,
         "num_layers": num_layers,
-        "channels_extension": channels_extension
+        "channels_extension": channels_extension,
+        "dropout": dropout
     }
     if model is None:
         model = WaveUNet(
@@ -168,6 +172,15 @@ def exp_305_waveunet(config, model: bool = None, minor=None):
     # 7 layers, ext +24 - Nvidia RTX3060 6Gb RAM - 16 batch size
     return config, model
 
+
+@registered_experiment(major=306)
+def exp_306_waveunet(config, model: bool = None, minor=None):
+    # https://github.com/balthazarneveu/gyraudio/issues/13
+    config[BATCH_SIZE] = [16, 16, 16]
+    config[EPOCHS] = 60
+    config, model = exp_wave_unet(config, model=model, num_layers=7, channels_extension=24, dropout=0.2)
+    # 7 layers, ext +24 - Nvidia RTX3060 6Gb RAM - 16 batch size
+    return config, model
 
 # ------------------ TRANSFORMER ------------------
 
