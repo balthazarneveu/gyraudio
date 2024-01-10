@@ -51,14 +51,12 @@ class DecoderStage(torch.nn.Module):
         super().__init__()
         self.conv = BaseConvolutionBlock(ch_in, ch_out, k_size=k_size)
         self.upsample = torch.nn.Upsample(scale_factor=2, mode="linear", align_corners=True)
-        self.non_linearity = torch.nn.ReLU()
 
     def forward(self, x_ds: torch.Tensor, x_skip: torch.Tensor) -> torch.Tensor:
         """"""
         x_us = self.upsample(x_ds)  # [N, ch, T/2] -> [N, ch, T]
         x = torch.cat([x_us, x_skip], dim=1)  # [N, 2.ch, T]
-        x = self.conv(x)  # [N, ch_out, T]
-        x = self.non_linearity(x)
+        x = self.conv_block(x)  # [N, ch_out, T]
         return x
 
 
@@ -81,7 +79,6 @@ class WaveUNet(SeparationModel):
         self.ch_out = ch_out
         self.encoder_list = torch.nn.ModuleList()
         self.decoder_list = torch.nn.ModuleList()
-        self.non_linearity = torch.nn.ReLU()
         # Defining first encoder
         self.encoder_list.append(EncoderStage(ch_in, channels_extension, k_size=k_conv_ds))
         for level in range(1, num_layers+1):
