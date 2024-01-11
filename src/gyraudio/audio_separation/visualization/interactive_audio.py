@@ -42,11 +42,17 @@ def signal_selector(signals, idx=0, global_params={}):
 def remix(signals, dataset_mix=True, snr=0.):
     if dataset_mix:
         mixed_signal = signals["buffers"][MIXED]
+        ## Can be retrieved by :
+        # signal = signals["buffers"][CLEAN]
+        # noisy = signals["buffers"][NOISY]
+        # mixed_snr = 10 ** (signals.get("mixed_snr", np.NaN) / 10)
+        # mixed_signal = mixed_snr ** 0.5 * torch.norm(noisy) / torch.norm(signal) * signal + noisy
+        # mixed_signal = mixed_signal * torch.max(signals["buffers"][MIXED]) / torch.max(mixed_signal)
     else:
         signal = signals["buffers"][CLEAN]
         noisy = signals["buffers"][NOISY]
-        # mixed_signal = signal + 10.**(-snr/20.)*noisy
-        mixed_signal = 10.**(snr/20.)*signal + noisy
+        alpha = 10 ** (-snr / 20) * torch.norm(signal) / torch.norm(noisy)
+        mixed_signal = signal + alpha * noisy
     return mixed_signal
 
 
