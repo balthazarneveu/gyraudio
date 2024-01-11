@@ -107,9 +107,10 @@ def zin(sig, zoom, center, num_samples=300):
 
 @interactive(
     center=KeyboardControl(value_default=0.5, value_range=[0., 1.], step=0.01, keyup="6", keydown="4"),
-    zoom=KeyboardControl(value_default=0., value_range=[0., 11.], step=1, keyup="+", keydown="-")
+    zoom=KeyboardControl(value_default=0., value_range=[0., 11.], step=1, keyup="+", keydown="-"),
+    zoomy=KeyboardControl(value_default=0., value_range=[-15., 15.], step=1, keyup="up", keydown="down")
 )
-def visualize_audio(signal: dict, mixed_signal, pred, zoom=1, center=0.5, global_params={}):
+def visualize_audio(signal: dict, mixed_signal, pred, zoom=1, zoomy=0., center=0.5, global_params={}):
     """Create curves
     """
     zval = 1.5**zoom
@@ -123,7 +124,7 @@ def visualize_audio(signal: dict, mixed_signal, pred, zoom=1, center=0.5, global
     pred.y = zin(pred.y, zval, center)
     curves = [noisy, mixed, pred, clean]
     title = f"Premixed SNR : {global_params['mixed_snr']:.1f} dB"
-    return Curve(curves, ylim=[-0.04, 0.04], xlabel="Time index", ylabel="Amplitude", title=title)
+    return Curve(curves, ylim=[-0.04 * 1.5 ** zoomy, 0.04 * 1.5 ** zoomy], xlabel="Time index", ylabel="Amplitude", title=title)
 
 
 def interactive_audio_separation_processing(signals, model_list, config_list):
