@@ -2,6 +2,7 @@ from gyraudio.audio_separation.data.dataset import AudioDataset
 from typing import Tuple
 import logging
 from torch import Tensor
+import torch
 import torchaudio
 from random import randint
 
@@ -28,7 +29,12 @@ class RemixedAudioDataset(AudioDataset):
         assert noise_path.exists()
         clean_audio_signal, sampling_rate = torchaudio.load(str(signal_path))
         noise_audio_signal, sampling_rate = torchaudio.load(str(noise_path))
-        mixed_audio_signal = clean_audio_signal + noise_audio_signal
+        min_snr, max_snr = -4, 4
+        snr = min_snr + (max_snr-min_snr)*torch.rand(1)
+        alpha = 10 ** (-snr / 20) * torch.norm(clean_audio_signal) / torch.norm(noise_audio_signal)
+        mixed_audio_signal = clean_audio_signal + alpha*noise_audio_signal
+        power_target_sqrt = 16.
+        mixed_audio_signal = mixed_audio_signal * power_target_sqrt / torch.norm(mixed_audio_signal)
         self.sampling_rate = sampling_rate
         if self.debug:
             logging.debug(f"{mixed_audio_signal.shape}")
