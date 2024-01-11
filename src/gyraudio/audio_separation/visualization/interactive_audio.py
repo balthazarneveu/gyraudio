@@ -40,6 +40,7 @@ def signal_selector(signals, idx=0, global_params={}):
     snr=(6., [-3., 6.], "extra SNR amplification [dB]")
 )
 def remix(signals, dataset_mix=True, snr=0.):
+    power_target_sqrt = 15.9054
     if dataset_mix:
         mixed_signal = signals["buffers"][MIXED]
         ## Can be retrieved by :
@@ -48,11 +49,13 @@ def remix(signals, dataset_mix=True, snr=0.):
         # mixed_snr = 10 ** (signals.get("mixed_snr", np.NaN) / 10)
         # mixed_signal = mixed_snr ** 0.5 * torch.norm(noisy) / torch.norm(signal) * signal + noisy
         # mixed_signal = mixed_signal * torch.max(signals["buffers"][MIXED]) / torch.max(mixed_signal)
+        # or mixed_signal = mixed_signal * power_target_sqrt / torch.norm(mixed_signal)
     else:
         signal = signals["buffers"][CLEAN]
         noisy = signals["buffers"][NOISY]
         alpha = 10 ** (-snr / 20) * torch.norm(signal) / torch.norm(noisy)
         mixed_signal = signal + alpha * noisy
+        mixed_signal = mixed_signal * power_target_sqrt / torch.norm(mixed_signal)
     return mixed_signal
 
 
@@ -113,7 +116,7 @@ def zin(sig, zoom, center, num_samples=300):
 
 @interactive(
     center=KeyboardControl(value_default=0.5, value_range=[0., 1.], step=0.01, keyup="6", keydown="4"),
-    zoom=KeyboardControl(value_default=0., value_range=[0., 11.], step=1, keyup="+", keydown="-"),
+    zoom=KeyboardControl(value_default=0., value_range=[0., 15.], step=1, keyup="+", keydown="-"),
     zoomy=KeyboardControl(value_default=0., value_range=[-15., 15.], step=1, keyup="up", keydown="down")
 )
 def visualize_audio(signal: dict, mixed_signal, pred, zoom=1, zoomy=0., center=0.5, global_params={}):
@@ -127,6 +130,8 @@ def visualize_audio(signal: dict, mixed_signal, pred, zoom=1, zoomy=0., center=0
     noisy = SingleCurve(y=zin(signal["buffers"][NOISY][0, :], zval, center),
                         alpha=0.3, style="y--", linewidth=1, label="noisy")
     mixed = SingleCurve(y=zin(mixed_signal[0, :], zval, center), style="r-", alpha=0.1, linewidth=2, label="mixed")
+    true_mixed = SingleCurve(y=zin(signal["buffers"][MIXED][0, :], zval, center),
+                        alpha=0.3, style="b-", linewidth=1, label="true mixed")
     pred.y = zin(pred.y, zval, center)
     curves = [noisy, mixed, pred, clean]
     title = f"Premixed SNR : {global_params['mixed_snr']:.1f} dB"
