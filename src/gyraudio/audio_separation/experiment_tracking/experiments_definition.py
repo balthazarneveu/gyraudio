@@ -241,6 +241,18 @@ def exp_311_waveunet(config, model: bool = None, minor=None):
     return config, model
 
 
+@registered_experiment(major=312)
+def exp_312_waveunet(config, model: bool = None, minor=None):
+    # https://github.com/balthazarneveu/gyraudio/issues/13
+    config[BATCH_SIZE] = [16, 16, 16]
+    config[EPOCHS] = 160
+    config[OPTIMIZER][LEARNING_RATE] = 5.e-4
+    config, model = exp_wave_unet(config, model=model, num_layers=7, channels_extension=24)
+    config[DATALOADER][AUGMENTATION] = [AUG_TRIM, AUG_RESCALE]
+    # 7 layers, ext +24 - Nvidia RTX3060 6Gb RAM - 16 batch size
+    return config, model
+
+
 @registered_experiment(major=313)
 def exp_313_waveunet(config, model: bool = None, minor=None):
     # OVERFIT 2.3M params
