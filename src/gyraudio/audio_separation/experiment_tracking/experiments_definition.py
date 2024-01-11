@@ -4,7 +4,7 @@ from gyraudio.audio_separation.architecture.wave_unet import WaveUNet
 from gyraudio.audio_separation.architecture.transformer import TransformerModel
 from gyraudio.audio_separation.properties import (
     NAME, ANNOTATIONS, MAX_STEPS_PER_EPOCH, EPOCHS, BATCH_SIZE,
-    OPTIMIZER,
+    OPTIMIZER, LEARNING_RATE,
     DATALOADER,
     WEIGHT_DECAY,
     AUGMENTATION, AUG_TRIM, AUG_AWGN, AUG_RESCALE
@@ -215,6 +215,31 @@ def exp_309_waveunet(config, model: bool = None, minor=None):
     config[DATALOADER][AUGMENTATION] = [AUG_TRIM, AUG_AWGN, AUG_RESCALE]
     # 7 layers, ext +24 - Nvidia RTX3060 6Gb RAM - 16 batch size
     return config, model
+
+
+@registered_experiment(major=310)
+def exp_310_waveunet(config, model: bool = None, minor=None):
+    # Retrain baseline WaeveUnet with bugfix on Non linearity
+    # https://github.com/balthazarneveu/gyraudio/issues/13
+    config[BATCH_SIZE] = [16, 16, 16]
+    config[EPOCHS] = 120
+    config[OPTIMIZER][LEARNING_RATE] = 1.e-2
+    config, model = exp_wave_unet(config, model=model, num_layers=7, channels_extension=24)
+    config[DATALOADER][AUGMENTATION] = [AUG_TRIM, AUG_AWGN, AUG_RESCALE]
+    # 7 layers, ext +24 - Nvidia RTX3060 6Gb RAM - 16 batch size
+    return config, model
+
+
+@registered_experiment(major=311)
+def exp_311_waveunet(config, model: bool = None, minor=None):
+    # Retrain baseline WaeveUnet with bugfix on Non linearity
+    # https://github.com/balthazarneveu/gyraudio/issues/13
+    config[BATCH_SIZE] = [16, 16, 16]
+    config[EPOCHS] = 60
+    config, model = exp_wave_unet(config, model=model, num_layers=7, channels_extension=24)
+    # 7 layers, ext +24 - Nvidia RTX3060 6Gb RAM - 16 batch size
+    return config, model
+
 
 # ------------------ TRANSFORMER ------------------
 
