@@ -37,13 +37,14 @@ def signal_selector(signals, idx=0, global_params={}):
 
 @interactive(
     dataset_mix=(True,),
-    snr=(6., [-3., 6.], "extra SNR amplification [dB]")
+    snr=(0., [-4., 4.], "extra SNR amplification [dB]")
 )
 def remix(signals, dataset_mix=True, snr=0.):
-    power_target_sqrt = 15.9054
+    # power_target_sqrt = 15.9054
+    power_target_sqrt = 16.
     if dataset_mix:
         mixed_signal = signals["buffers"][MIXED]
-        ## Can be retrieved by :
+        # Can be retrieved by :
         # signal = signals["buffers"][CLEAN]
         # noisy = signals["buffers"][NOISY]
         # mixed_snr = 10 ** (signals.get("mixed_snr", np.NaN) / 10)
