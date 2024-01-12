@@ -263,6 +263,29 @@ def exp_313_waveunet(config, model: bool = None, minor=None):
     # 7 layers, ext +24 - Nvidia RTX3060 6Gb RAM - 16 batch size
     return config, model
 
+
+@registered_experiment(major=314)
+def exp_314_waveunet(config, model: bool = None, minor=None):
+    config[BATCH_SIZE] = [16, 16, 16]
+    config[EPOCHS] = 120
+    config, model = exp_wave_unet(config, model=model, num_layers=7, channels_extension=8)
+    config[DATALOADER][NAME] = "remix"
+    # config[DATALOADER][AUGMENTATION] = [AUG_TRIM, AUG_RESCALE]
+    # 7 layers, ext +8 - Nvidia RTX3060 6Gb RAM - 16 batch size
+    return config, model
+
+
+@registered_experiment(major=315)
+def exp_315_waveunet(config, model: bool = None, minor=None):
+    config[BATCH_SIZE] = [16, 16, 16]
+    config[EPOCHS] = 120
+    config, model = exp_wave_unet(config, model=model, num_layers=5, channels_extension=24)
+    config[DATALOADER][NAME] = "remix"
+    # config[DATALOADER][AUGMENTATION] = [AUG_TRIM, AUG_RESCALE]
+    # 5 layers, ext +24 - Nvidia RTX3060 6Gb RAM - 16 batch size
+    return config, model
+
+
 # ------------------ TRANSFORMER ------------------
 
 
