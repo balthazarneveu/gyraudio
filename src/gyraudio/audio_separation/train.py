@@ -6,7 +6,7 @@ from gyraudio.audio_separation.properties import (
 )
 from gyraudio.default_locations import EXPERIMENT_STORAGE_ROOT
 from gyraudio.audio_separation.experiment_tracking.storage import get_output_folder, save_checkpoint
-from gyraudio.audio_separation.metrics import Metrics
+from gyraudio.audio_separation.metrics import Costs
 # from gyraudio.audio_separation.experiment_tracking.storage import load_checkpoint
 from pathlib import Path
 from gyraudio.io.dump import Dump
@@ -54,11 +54,11 @@ def training_loop(model: torch.nn.Module, config: dict, dl, device: str = "cuda"
     if optim_name == "adam":
         optimizer = torch.optim.Adam(model.parameters(), **optim_params)
     max_steps = config.get(MAX_STEPS_PER_EPOCH, None)
-    training_loss = Metrics(TRAIN)
-    test_loss = Metrics(TEST)
+    training_costs = Costs(TRAIN)
+    test_costs = Costs(TEST)
     for epoch in range(config[EPOCHS]):
-        training_loss.reset_epoch()
-        test_loss.reset_epoch()
+        training_costs.reset_epoch()
+        test_costs.reset_epoch()
         model.to(device)
         # Training loop
         # -----------------------------------------------------------
@@ -71,12 +71,12 @@ def training_loop(model: torch.nn.Module, config: dict, dl, device: str = "cuda"
             batch_mix, batch_signal, batch_noise = batch_mix.to(device), batch_signal.to(device), batch_noise.to(device)
             model.zero_grad()
             batch_output_signal, batch_output_noise = model(batch_mix)
-            training_loss.update(batch_output_signal, batch_signal, SIGNAL)
-            training_loss.update(batch_output_noise, batch_noise, NOISE)
-            loss = training_loss.finish_step()
+            training_costs.update(batch_output_signal, batch_signal, SIGNAL)
+            training_costs.update(batch_output_noise, batch_noise, NOISE)
+            loss = training_costs.finish_step()
             loss.backward()
             optimizer.step()
-        training_loss.finish_epoch()
+        training_costs.finish_epoch()
 
         # Validation loop
         # -----------------------------------------------------------
@@ -90,24 +90,24 @@ def training_loop(model: torch.nn.Module, config: dict, dl, device: str = "cuda"
                 batch_mix, batch_signal, batch_noise = batch_mix.to(
                     device), batch_signal.to(device), batch_noise.to(device)
                 batch_output_signal, batch_output_noise = model(batch_mix)
-                test_loss.update(batch_output_signal, batch_signal, SIGNAL)
-                test_loss.update(batch_output_noise, batch_noise, NOISE)
-                test_loss.finish_step()
-        test_loss.finish_epoch()
+                test_costs.update(batch_output_signal, batch_signal, SIGNAL)
+                test_costs.update(batch_output_noise, batch_noise, NOISE)
+                test_costs.finish_step()
+        test_costs.finish_epoch()
 
-        print(f"epoch {epoch}:\n{training_loss}\n{test_loss}")
+        print(f"epoch {epoch}:\n{training_costs}\n{test_costs}")
         if wandb_flag:
             wandb.log({
-                "loss/training loss signal": training_loss.total_metric[SIGNAL],
-                "loss/test loss signal": test_loss.total_metric[SIGNAL],
-                "debug loss/training loss total": training_loss.total_metric[TOTAL],
-                "debug loss/test loss total": test_loss.total_metric[TOTAL],
-                "debug loss/training loss noise": training_loss.total_metric[NOISE],
-                "debug loss/test loss noise": test_loss.total_metric[NOISE],
+                "loss/training loss signal": training_costs.total_metric[SIGNAL],
+                "loss/test loss signal": test_costs.total_metric[SIGNAL],
+                "debug loss/training loss total": training_costs.total_metric[TOTAL],
+                "debug loss/test loss total": test_costs.total_metric[TOTAL],
+                "debug loss/training loss noise": training_costs.total_metric[NOISE],
+                "debug loss/test loss noise": test_costs.total_metric[NOISE],
 
             })
-        metrics[TRAIN] = training_loss.total_metric
-        metrics[TEST] = test_loss.total_metric
+        metrics[TRAIN] = training_costs.total_metric
+        metrics[TEST] = test_costs.total_metric
         Dump.save_json(metrics, exp_dir/f"metrics_{epoch:04d}.json")
         save_checkpoint(model, exp_dir, optimizer, config=config, epoch=epoch)
         torch.cuda.empty_cache()
