@@ -1,10 +1,10 @@
-from gyraudio.audio_separation.metrics import Metrics
+from gyraudio.audio_separation.metrics import Costs
 from gyraudio.audio_separation.properties import SIGNAL, NOISE
 import torch
 
 
 def test_metrics(device="cpu"):
-    metric = Metrics("check")
+    metric = Costs("check")
     batch_size = 4
     gt_1 = torch.zeros(batch_size, 1, 512, device=device, requires_grad=True)
     gt_2 = torch.zeros(batch_size, 1, 256, device=device)

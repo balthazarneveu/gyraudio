@@ -13,7 +13,7 @@ DEFAULT_COST = {
 }
 
 
-class Metrics:
+class Costs:
     """Keep track of cost functions.
     ```
     for epoch in range(...):
