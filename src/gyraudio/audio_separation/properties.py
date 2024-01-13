@@ -12,6 +12,13 @@ AUGMENTATION = "augmentation"
 DATALOADER = "dataloader"
 
 
+# Loss split
+SIGNAL = "signal"
+NOISE = "noise"
+TOTAL = "total"
+COEFFICIENT = "coefficient"
+
+
 # Augmentation types
 AUG_TRIM = "trim"  # trim batches to arbitrary length
 AUG_AWGN = "awgn"  # add white gaussian noise
@@ -38,6 +45,7 @@ SHORT_NAME = "short_name"
 # Loss
 LOSS = "loss"
 LOSS_L2 = "MSE"
+LOSS_TYPE = "loss_type"
 
 # Checkpoint
 MODEL = "model"
