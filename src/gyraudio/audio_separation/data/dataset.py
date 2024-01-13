@@ -35,7 +35,7 @@ class AudioDataset(Dataset):
     def load_data(self):
         raise NotImplementedError("load_data method must be implemented")
     
-    def augment_data(self, mixed_audio_signal, noise_audio_signal,  clean_audio_signal) :
+    def augment_data(self, mixed_audio_signal, clean_audio_signal, noise_audio_signal) :
         if AUG_RESCALE in self.augmentation_config:
             current_amplitude = 0.5 + 1.5*torch.rand(1, device=mixed_audio_signal.device)
             # logging.debug(current_amplitude)
