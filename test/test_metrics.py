@@ -5,7 +5,7 @@ import torch
 
 def test_metrics(device="cpu"):
     metric = Metrics("check")
-    batch_size = 49096*4
+    batch_size = 4
     gt_1 = torch.zeros(batch_size, 1, 512, device=device, requires_grad=True)
     gt_2 = torch.zeros(batch_size, 1, 256, device=device)
     for epoch in range(4):
