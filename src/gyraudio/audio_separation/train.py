@@ -2,7 +2,7 @@ from gyraudio.audio_separation.experiment_tracking.experiments import get_experi
 from gyraudio.audio_separation.parser import shared_parser
 from gyraudio.audio_separation.properties import (
     TRAIN, TEST, EPOCHS, OPTIMIZER, NAME, MAX_STEPS_PER_EPOCH,
-    SIGNAL, NOISE, TOTAL,
+    SIGNAL, NOISE, TOTAL, SNR
 )
 from gyraudio.default_locations import EXPERIMENT_STORAGE_ROOT
 from gyraudio.audio_separation.experiment_tracking.storage import get_output_folder, save_checkpoint
@@ -46,6 +46,14 @@ def launch_training(exp: int, wandb_flag: bool = True, device: str = "cuda", sav
     return True
 
 
+def update_metrics(metrics, phase, pred, gt, pred_noise, gt_noise):
+    metrics[phase].update(pred, gt, SIGNAL)
+    metrics[phase].update(pred_noise, gt_noise, NOISE)
+    metrics[phase].update(pred, gt, SNR)
+    loss = metrics[phase].finish_step()
+    return loss
+
+
 def training_loop(model: torch.nn.Module, config: dict, dl, device: str = "cuda", wandb_flag: bool = False,
                   exp_dir: Path = None):
     optim_params = deepcopy(config[OPTIMIZER])
@@ -70,9 +78,14 @@ def training_loop(model: torch.nn.Module, config: dict, dl, device: str = "cuda"
             batch_mix, batch_signal, batch_noise = batch_mix.to(device), batch_signal.to(device), batch_noise.to(device)
             model.zero_grad()
             batch_output_signal, batch_output_noise = model(batch_mix)
-            costs[TRAIN].update(batch_output_signal, batch_signal, SIGNAL)
-            costs[TRAIN].update(batch_output_noise, batch_noise, NOISE)
-            loss = costs[TRAIN].finish_step()
+            loss = update_metrics(
+                costs, TRAIN,
+                batch_output_signal, batch_signal,
+                batch_output_noise, batch_noise
+            )
+            # costs[TRAIN].update(batch_output_signal, batch_signal, SIGNAL)
+            # costs[TRAIN].update(batch_output_noise, batch_noise, NOISE)
+            # loss = costs[TRAIN].finish_step()
             loss.backward()
             optimizer.step()
         costs[TRAIN].finish_epoch()
@@ -89,18 +102,22 @@ def training_loop(model: torch.nn.Module, config: dict, dl, device: str = "cuda"
                 batch_mix, batch_signal, batch_noise = batch_mix.to(
                     device), batch_signal.to(device), batch_noise.to(device)
                 batch_output_signal, batch_output_noise = model(batch_mix)
-                costs[TEST].update(batch_output_signal, batch_signal, SIGNAL)
-                costs[TEST].update(batch_output_noise, batch_noise, NOISE)
-                costs[TEST].finish_step()
+                loss = update_metrics(
+                    costs, TEST,
+                    batch_output_signal, batch_signal,
+                    batch_output_noise, batch_noise
+                )
         costs[TEST].finish_epoch()
 
         print(f"epoch {epoch}:\n{costs[TRAIN]}\n{costs[TEST]}")
         wandblogs = {}
         if wandb_flag:
             for phase in [TRAIN, TEST]:
-                wandblogs[f"loss/{phase} loss signal"] = costs[phase].total_metric[SIGNAL]
+                wandblogs[f"{phase} loss signal"] = costs[phase].total_metric[SIGNAL]
+                wandblogs[f"debug loss/{phase} loss signal"] = costs[phase].total_metric[SIGNAL]
                 wandblogs[f"debug loss/{phase} loss total"] = costs[phase].total_metric[TOTAL]
                 wandblogs[f"debug loss/{phase} loss noise"] = costs[phase].total_metric[NOISE]
+                wandblogs[f"{phase} snr"] = costs[phase].total_metric[SNR]
             wandb.log(wandblogs)
         metrics[TRAIN] = costs[TRAIN].total_metric
         metrics[TEST] = costs[TEST].total_metric
