@@ -70,6 +70,12 @@ class Metrics:
         self.count += 1
         return loss_signal
 
-    def finish_epoch(self):
+    def finish_epoch(self) -> None:
         for key in self.metrics:
             self.total_metric[key] /= self.count
+
+    def __repr__(self) -> str:
+        rep = f"{self.name}\t:\t"
+        for key in self.total_metric:
+            rep += f"{key}: {self.total_metric[key]:.3e} | "
+        return rep

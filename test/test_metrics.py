@@ -22,3 +22,4 @@ def test_metrics(device="cpu"):
             print(f"epoch {epoch} | step {step} : {metric.metrics}")
         metric.finish_epoch()
         print(f"epoch {epoch} >>>>>>>> : {metric.total_metric}")
+        print(metric)
