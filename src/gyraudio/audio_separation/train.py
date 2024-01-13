@@ -1,10 +1,12 @@
 from gyraudio.audio_separation.experiment_tracking.experiments import get_experience
 from gyraudio.audio_separation.parser import shared_parser
 from gyraudio.audio_separation.properties import (
-    TRAIN, TEST, EPOCHS, OPTIMIZER, NAME, MAX_STEPS_PER_EPOCH, LOSS_L2
+    TRAIN, TEST, EPOCHS, OPTIMIZER, NAME, MAX_STEPS_PER_EPOCH, LOSS_L2,
+    SIGNAL, NOISE, TOTAL,
 )
 from gyraudio.default_locations import EXPERIMENT_STORAGE_ROOT
 from gyraudio.audio_separation.experiment_tracking.storage import get_output_folder, save_checkpoint
+from gyraudio.audio_separation.metrics import Metrics
 # from gyraudio.audio_separation.experiment_tracking.storage import load_checkpoint
 from pathlib import Path
 from gyraudio.io.dump import Dump
@@ -52,48 +54,60 @@ def training_loop(model: torch.nn.Module, config: dict, dl, device: str = "cuda"
     if optim_name == "adam":
         optimizer = torch.optim.Adam(model.parameters(), **optim_params)
     max_steps = config.get(MAX_STEPS_PER_EPOCH, None)
-
+    training_loss = Metrics(TRAIN)
+    test_loss = Metrics(TEST)
     for epoch in range(config[EPOCHS]):
+        training_loss.reset_epoch()
+        test_loss.reset_epoch()
         model.to(device)
-        # model, optimizer, epoch, config = load_checkpoint(model, exp_dir, optimizer, epoch=epoch)
         # Training loop
         # -----------------------------------------------------------
 
         metrics = {TRAIN: {}, TEST: {}}
-        training_loss = 0.
         for step_index, (batch_mix, batch_signal, batch_noise) in tqdm(
                 enumerate(dl[TRAIN]), desc=f"Epoch {epoch}", total=len(dl[TRAIN])):
             if max_steps is not None and step_index >= max_steps:
                 break
             batch_mix, batch_signal, batch_noise = batch_mix.to(device), batch_signal.to(device), batch_noise.to(device)
             model.zero_grad()
-            batch_output_signal, _batch_output_noise = model(batch_mix)
-            loss = torch.nn.functional.mse_loss(batch_output_signal, batch_signal)
+            batch_output_signal, batch_output_noise = model(batch_mix)
+            training_loss.update(batch_output_signal, batch_signal, SIGNAL)
+            training_loss.update(batch_output_noise, batch_noise, NOISE)
+            loss = training_loss.finish_step()
             loss.backward()
             optimizer.step()
-            training_loss += loss.item()
-        training_loss = training_loss/len(dl[TRAIN])
+        training_loss.finish_epoch()
+
         # Validation loop
         # -----------------------------------------------------------
         model.eval()
         torch.cuda.empty_cache()
         with torch.no_grad():
-            test_loss = 0.
             for step_index, (batch_mix, batch_signal, batch_noise) in tqdm(
                     enumerate(dl[TEST]), desc=f"Epoch {epoch}", total=len(dl[TEST])):
                 if max_steps is not None and step_index >= max_steps:
                     break
                 batch_mix, batch_signal, batch_noise = batch_mix.to(
                     device), batch_signal.to(device), batch_noise.to(device)
-                batch_output_signal, _batch_output_noise = model(batch_mix)
-                loss = torch.nn.functional.mse_loss(batch_output_signal, batch_signal)
-                test_loss += loss.item()
-        test_loss = test_loss/len(dl[TEST])
-        logging.info(f"{training_loss:.3e} | {test_loss:.3e}")
+                batch_output_signal, batch_output_noise = model(batch_mix)
+                test_loss.update(batch_output_signal, batch_signal, SIGNAL)
+                test_loss.update(batch_output_noise, batch_noise, NOISE)
+                test_loss.finish_step()
+        test_loss.finish_epoch()
+
+        print(f"epoch {epoch}:\n{training_loss}\n{test_loss}")
         if wandb_flag:
-            wandb.log({"train/loss": training_loss, "test/loss": test_loss})
-        metrics[TRAIN][LOSS_L2] = training_loss
-        metrics[TEST][LOSS_L2] = test_loss
+            wandb.log({
+                "loss/training loss signal": training_loss.total_metric[SIGNAL],
+                "loss/test loss signal": test_loss.total_metric[SIGNAL],
+                "debug loss/training loss total": training_loss.total_metric[TOTAL],
+                "debug loss/test loss total": test_loss.total_metric[TOTAL],
+                "debug loss/training loss noise": training_loss.total_metric[NOISE],
+                "debug loss/test loss noise": test_loss.total_metric[NOISE],
+
+            })
+        metrics[TRAIN] = training_loss.total_metric
+        metrics[TEST] = test_loss.total_metric
         Dump.save_json(metrics, exp_dir/f"metrics_{epoch:04d}.json")
         save_checkpoint(model, exp_dir, optimizer, config=config, epoch=epoch)
         torch.cuda.empty_cache()
