@@ -1,9 +1,11 @@
 from gyraudio.audio_separation.metrics import Costs
-from gyraudio.audio_separation.properties import SIGNAL, NOISE
+from gyraudio.audio_separation.properties import SIGNAL, NOISE, SNR
 import torch
+import pytest
 
 
-def test_metrics(device="cpu"):
+@pytest.mark.parametrize("device", ["cpu", "cuda"])
+def test_metrics(device):
     metric = Costs("check")
     batch_size = 4
     gt_1 = torch.zeros(batch_size, 1, 512, device=device, requires_grad=True)
@@ -16,6 +18,7 @@ def test_metrics(device="cpu"):
             pred_2 = epoch*torch.ones(*gt_2.shape, device=device)
             metric.update(pred_1, gt_1, SIGNAL)
             metric.update(pred_2, gt_2, NOISE)
+            metric.update(pred_1, gt_1, SNR)
             loss = metric.finish_step()
             # Backprop/update weights etc...
             loss.backward()

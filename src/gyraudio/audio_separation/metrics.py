@@ -1,5 +1,22 @@
-from gyraudio.audio_separation.properties import SIGNAL, NOISE, TOTAL, LOSS_TYPE, COEFFICIENT
+from gyraudio.audio_separation.properties import SIGNAL, NOISE, TOTAL, LOSS_TYPE, COEFFICIENT, SNR
 import torch
+
+
+def snr(prediction: torch.Tensor, ground_truth: torch.Tensor, reduce="mean") -> torch.Tensor:
+    """Compute the SNR between two tensors.
+    Args:
+        prediction (torch.Tensor): prediction tensor
+        ground_truth (torch.Tensor): ground truth tensor
+    Returns:
+        torch.Tensor: SNR
+    """
+    power_signal = torch.sum(ground_truth**2, dim=(-2, -1))
+    power_error = torch.sum((prediction-ground_truth)**2, dim=(-2, -1))
+    eps = torch.finfo(torch.float32).eps
+    snr_per_element = 10*torch.log10(power_signal+eps)/(power_error+eps)
+    final_snr = torch.mean(snr_per_element) if reduce == "mean" else snr_per_element
+    return final_snr
+
 
 DEFAULT_COST = {
     SIGNAL: {
@@ -9,6 +26,9 @@ DEFAULT_COST = {
     NOISE: {
         COEFFICIENT: 0.5,
         LOSS_TYPE: torch.nn.functional.mse_loss
+    },
+    SNR: {
+        LOSS_TYPE: snr
     }
 }
 
@@ -35,7 +55,6 @@ class Costs:
     def __init__(self, name: str, costs=DEFAULT_COST) -> None:
         self.name = name
         self.keys = list(costs.keys())
-        self.total_coefficient = sum([costs[key][COEFFICIENT] for key in self.keys])
         self.cost = costs
 
     def __reset_step(self) -> None:
@@ -61,11 +80,12 @@ class Costs:
         self.metrics[TOTAL] = 0.
         # Sum all metrics to total
         for key in self.metrics:
-            if key != TOTAL:
+            if key != TOTAL and self.cost[key].get(COEFFICIENT, False):
                 self.metrics[TOTAL] += self.cost[key][COEFFICIENT]*self.metrics[key]
         loss_signal = self.metrics[TOTAL]
         for key in self.metrics:
-            self.metrics[key] = self.metrics[key].item()
+            if not isinstance(self.metrics[key], float):
+                self.metrics[key] = self.metrics[key].item()
             self.total_metric[key] += self.metrics[key]
         self.count += 1
         return loss_signal
