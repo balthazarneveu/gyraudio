@@ -64,7 +64,7 @@ class DecoderStage(torch.nn.Module):
 
 
 class WaveUNet(SeparationModel):
-    """UNET in temporal domain (waveform) 
+    """UNET in temporal domain (waveform)
     = Multiscale convolutional neural network for audio separation
     https://arxiv.org/abs/1806.03185
     """

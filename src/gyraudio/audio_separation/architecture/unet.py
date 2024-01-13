@@ -47,7 +47,7 @@ class DecoderSingleStage(torch.nn.Module):
         ======
         ch_out = 2*ch/extension_factor
 
-        self.scale_mixers_conv 
+        self.scale_mixers_conv
         - tells how lower decoded (x_ds) scale is merged with current encoded scale (x_skip)
         - could be a pointwise aka conv1x1
         """
