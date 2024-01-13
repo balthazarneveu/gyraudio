@@ -1,4 +1,4 @@
-from gyraudio.audio_separation.properties import TRAIN, TEST, AUG_TRIM
+from gyraudio.audio_separation.properties import TRAIN, TEST, AUG_TRIM, LENGTHS, LENGTH_DIVIDER, TRIM_PROB
 from gyraudio.audio_separation.data import get_dataloader, get_config_dataloader, SingleAudioDataset, MixedAudioDataset, RemixedFixedAudioDataset, RemixedRandomAudioDataset
 from gyraudio.default_locations import RAW_AUDIO_ROOT, MIXED_AUDIO_ROOT
 import logging
@@ -37,7 +37,7 @@ def test_mixed_audio():
 
 
 def test_mixed_audio_trim():
-    train_set = get_config_dataloader(audio_root=MIXED_AUDIO_ROOT, mode=TRAIN, augmentation=[AUG_TRIM])
+    train_set = get_config_dataloader(audio_root=MIXED_AUDIO_ROOT, mode=TRAIN, augmentation={AUG_TRIM : {LENGTHS : [2048, 8000], LENGTH_DIVIDER : 1024, TRIM_PROB : 0.5}})
     test_set = get_config_dataloader(audio_root=MIXED_AUDIO_ROOT, mode=TEST)
     dataloaders = get_dataloader({
         TRAIN: train_set,
