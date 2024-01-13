@@ -32,7 +32,8 @@ def launch_training(exp: int, wandb_flag: bool = True, device: str = "cuda", sav
     logging.info(f"Config: {config}")
     if wandb_flag:
         wandb.init(
-            project="audio-sep",
+            project="audio-separation",
+            entity="teammd",
             name=short_name,
             tags=["debug"],
             config=config
@@ -100,7 +101,7 @@ def training_loop(model: torch.nn.Module, config: dict, dl, device: str = "cuda"
 
 def main(argv):
     default_device = "cuda" if torch.cuda.is_available() else "cpu"
-    parser_def = shared_parser(help="Launch training \nCheck results at: https://wandb.ai/balthazarneveu/audio-sep"
+    parser_def = shared_parser(help="Launch training \nCheck results at: https://wandb.ai/teammd/audio-separation"
                                + ("\n<<<Cuda available>>>" if default_device == "cuda" else ""))
     parser_def.add_argument("-nowb", "--no-wandb", action="store_true")
     parser_def.add_argument("-o", "--output-dir", type=str, default=EXPERIMENT_STORAGE_ROOT)
