@@ -66,6 +66,7 @@ CLEAN = "clean"
 NOISY = "noise"
 MIXED = "mixed"
 PREDICTED = "predicted"
+GENERIC = "generic"
 
 
 # MISC
