@@ -43,7 +43,7 @@ def audio_loading(input: Path, preload: bool) -> dict:
             MIXED: mixed_audio_path
         }
     }
-    signal["mixed_snr"] = float(mixed_audio_path.stem.split("_")[-1])
+    signal["premixed_snr"] = float(mixed_audio_path.stem.split("_")[-1])
     if preload:
         load_buffers(signal)
     return signal

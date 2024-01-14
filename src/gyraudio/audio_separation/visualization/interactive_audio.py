@@ -30,19 +30,21 @@ def signal_selector(signals, idx=0, global_params={}):
     signal = signals[idx % len(signals)]
     if "buffers" not in signal:
         load_buffers(signal)
+    global_params["selected_info"] = signal["name"]
     global_params["sampling_rate"] = signal["sampling_rate"]
-    global_params["mixed_snr"] = signal.get("mixed_snr", np.NaN)
+    global_params["premixed_snr"] = signal.get("premixed_snr", None)
     return signal
 
 
 @interactive(
     snr=(0., [-4., 4.], "SNR [dB]")
 )
-def remix(signals, snr=0.):
+def remix(signals, snr=0., global_params={}):
     signal = signals["buffers"][CLEAN]
     noisy = signals["buffers"][NOISY]
     alpha = 10 ** (-snr / 20) * torch.norm(signal) / torch.norm(noisy)
     mixed_signal = signal + alpha * noisy
+    global_params["snr"] = snr
     return mixed_signal
 
 
@@ -128,12 +130,16 @@ def visualize_audio(signal: dict, mixed_signal, pred, zoom=1, zoomy=0., center=0
                         alpha=0.1,
                         linewidth=2,
                         label=("*" if selected == MIXED else " ") + "mixed")
-    true_mixed = SingleCurve(y=zin(signal["buffers"][MIXED][0, :], zval, center),
-                             alpha=0.3, style="b-", linewidth=1, label="true mixed")
+    # true_mixed = SingleCurve(y=zin(signal["buffers"][MIXED][0, :], zval, center),
+    #                          alpha=0.3, style="b-", linewidth=1, label="true mixed")
     pred.y = zin(pred.y, zval, center)
     pred.label = ("*" if selected == PREDICTED else " ") + pred.label
     curves = [noisy, mixed, pred, clean]
-    title = f"Premixed SNR : {global_params['mixed_snr']:.1f} dB"
+    title = f"SNR  {global_params['snr']:.1f} dB"
+    if "selected_info" in global_params:
+        title += f" | File= {global_params['selected_info']}"
+    # if global_params.get("premixed_snr", None) is not None:
+    #     title += f"| Premixed SNR : {global_params['premixed_snr']:.1f} dB"
     return Curve(curves, ylim=[-0.04 * 1.5 ** zoomy, 0.04 * 1.5 ** zoomy], xlabel="Time index", ylabel="Amplitude", title=title)
 
 
