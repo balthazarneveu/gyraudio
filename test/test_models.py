@@ -15,7 +15,6 @@ def test_analytic_rf():
         model = FlatConvolutional(k_size=k_size)
         rf = model.receptive_field()
         rf_analytic = 4*(k_size-1) + 1
-        rf_analytic = rf_analytic
         assert rf == rf_analytic
         print(f"RF={rf}")
 
