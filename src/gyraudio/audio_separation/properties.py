@@ -45,6 +45,7 @@ MAX_STEPS_PER_EPOCH = "max_steps_per_epoch"
 NAME = "name"
 ANNOTATIONS = "annotations"
 NB_PARAMS = "nb_params"
+RECEPTIVE_FIELD = "receptive_field"
 SHORT_NAME = "short_name"
 
 

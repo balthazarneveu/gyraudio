@@ -1,21 +1,21 @@
 import torch
 from gyraudio.audio_separation.properties import (
-    NAME, ANNOTATIONS, NB_PARAMS
+    NAME, ANNOTATIONS, NB_PARAMS, RECEPTIVE_FIELD
 )
 from typing import Optional
 REGISTERED_EXPERIMENTS_LIST = {}
 
 
-def count_parameters(model: torch.nn.Module) -> int:
-    """Count number of trainable parameters
+# def count_parameters(model: torch.nn.Module) -> int:
+#     """Count number of trainable parameters
 
-    Args:
-        model (torch.nn.Module): Pytorch model
+#     Args:
+#         model (torch.nn.Module): Pytorch model
 
-    Returns:
-        int: Number of trainable elements
-    """
-    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+#     Returns:
+#         int: Number of trainable elements
+#     """
+#     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
 def registered_experiment(major: Optional[int] = None, failed: Optional[bool] = False) -> callable:
@@ -36,7 +36,8 @@ def registered_experiment(major: Optional[int] = None, failed: Optional[bool] = 
 
         def wrapper(config, minor=None, no_model=False, model=torch.nn.Module()):
             config, model = func(config, model=None if not no_model else model, minor=minor)
-            config[NB_PARAMS] = count_parameters(model)
+            config[NB_PARAMS] = model.count_parameters()
+            config[RECEPTIVE_FIELD] = model.receptive_field()
             assert NAME in config, "NAME not defined"
             assert ANNOTATIONS in config, "ANNOTATIONS not defined"
             return model, config
