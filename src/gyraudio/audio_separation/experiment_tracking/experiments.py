@@ -25,18 +25,18 @@ def get_experience(exp_major: int, exp_minor: int = 0, dry_run=False) -> Tuple[s
     """
     model = None
     config = {}
-    dataloader_name = "premix"
+    dataloader_name = "remix"
     config = {
         NAME: None,
         OPTIMIZER: {
             NAME: "adam",
             LEARNING_RATE: 0.001
         },
-        EPOCHS: 10,
+        EPOCHS: 60,
         DATALOADER: {
             NAME: dataloader_name,
         },
-        BATCH_SIZE: [16, 128, 128]
+        BATCH_SIZE: [16, 16, 16]
     }
 
     model, config = get_experiment_generator(exp_major=exp_major)(config, no_model=dry_run, minor=exp_minor)
