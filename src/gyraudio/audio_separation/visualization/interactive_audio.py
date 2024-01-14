@@ -48,6 +48,9 @@ def signal_selector(signals, idx=0, idn=0, global_params={}):
         if clean["sampling_rate"] != LEARNT_SAMPLING_RATE:
             cbuf = resample(cbuf, clean["sampling_rate"], LEARNT_SAMPLING_RATE)
             clean["sampling_rate"] = LEARNT_SAMPLING_RATE
+        if noise["sampling_rate"] != LEARNT_SAMPLING_RATE:
+            nbuf = resample(nbuf, noise["sampling_rate"], LEARNT_SAMPLING_RATE)
+            noise["sampling_rate"] = LEARNT_SAMPLING_RATE
         min_length = min(cbuf.shape[-1], nbuf.shape[-1])
         min_length = min_length - min_length % 1024
         signal = {
@@ -60,15 +63,18 @@ def signal_selector(signals, idx=0, idn=0, global_params={}):
                 CLEAN: cbuf[..., :1, :min_length],
                 NOISY: nbuf[..., :1, :min_length],
             },
+            "name": f"Clean={clean['name']} | Noise={noise['name']}",
+            "sampling_rate": LEARNT_SAMPLING_RATE
         }
     else:
         # signals are loaded in CPU
         signal = signals[idx % len(signals)]
         if "buffers" not in signal:
             load_buffers(signal)
-        global_params["selected_info"] = signal["name"]
-        global_params["sampling_rate"] = signal["sampling_rate"]
         global_params["premixed_snr"] = signal.get("premixed_snr", None)
+        signal["name"] = f"File={signal['name']}"
+    global_params["selected_info"] = signal['name']
+    global_params["sampling_rate"] = signal["sampling_rate"]
     return signal
 
 
@@ -173,7 +179,7 @@ def visualize_audio(signal: dict, mixed_signal, pred, zoom=1, zoomy=0., center=0
     curves = [noisy, mixed, pred, clean]
     title = f"SNR  {global_params['snr']:.1f} dB"
     if "selected_info" in global_params:
-        title += f" | File= {global_params['selected_info']}"
+        title += f" | {global_params['selected_info']}"
     # if global_params.get("premixed_snr", None) is not None:
     #     title += f"| Premixed SNR : {global_params['premixed_snr']:.1f} dB"
     return Curve(curves, ylim=[-0.04 * 1.5 ** zoomy, 0.04 * 1.5 ** zoomy], xlabel="Time index", ylabel="Amplitude", title=title)

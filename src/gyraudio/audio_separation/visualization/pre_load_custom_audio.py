@@ -21,7 +21,7 @@ def load_buffers_custom(signal: dict, device="cpu") -> None:
 
 
 def audio_loading(input: Path, preload: bool) -> dict:
-    name = input.name
+    name = input.parent.name + "/" + input.stem
     signal = {
         NAME: name,
         PATHS: input,
