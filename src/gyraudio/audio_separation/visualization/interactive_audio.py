@@ -4,12 +4,15 @@ from pathlib import Path
 from gyraudio.audio_separation.experiment_tracking.experiments import get_experience
 from gyraudio.audio_separation.experiment_tracking.storage import get_output_folder
 from gyraudio.default_locations import EXPERIMENT_STORAGE_ROOT
-from gyraudio.audio_separation.properties import SHORT_NAME, CLEAN, NOISY, MIXED, PREDICTED, ANNOTATIONS
+from gyraudio.audio_separation.properties import SHORT_NAME, CLEAN, NOISY, MIXED, PREDICTED, ANNOTATIONS, PATHS, GENERIC
 import torch
 from gyraudio.audio_separation.experiment_tracking.storage import load_checkpoint
 from gyraudio.audio_separation.visualization.pre_load_audio import (
     parse_command_line_audio_load, load_buffers, audio_loading_batch)
-
+from gyraudio.audio_separation.visualization.pre_load_custom_audio import (
+    parse_command_line_generic_audio_load, generic_audio_loading_batch,
+    load_buffers_custom
+)
 from typing import List
 import numpy as np
 import logging
@@ -19,25 +22,50 @@ from interactive_pipe.headless.pipeline import HeadlessPipeline
 from interactive_pipe.graphical.qt_gui import InteractivePipeQT
 from interactive_pipe.graphical.mpl_gui import InteractivePipeMatplotlib
 from gyraudio.audio_separation.visualization.audio_player import audio_selector, audio_trim, audio_player
+
 default_device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
 @interactive(
-    idx=KeyboardControl(value_default=0, value_range=[0, 1000], modulo=True, keyup="8", keydown="2")
+    idx=KeyboardControl(value_default=0, value_range=[0, 1000], modulo=True, keyup="8", keydown="2"),
+    idn=KeyboardControl(value_default=0, value_range=[0, 1000], modulo=True, keyup="9", keydown="3")
 )
-def signal_selector(signals, idx=0, global_params={}):
-    # signals are loaded in CPU
-    signal = signals[idx % len(signals)]
-    if "buffers" not in signal:
-        load_buffers(signal)
-    global_params["selected_info"] = signal["name"]
-    global_params["sampling_rate"] = signal["sampling_rate"]
-    global_params["premixed_snr"] = signal.get("premixed_snr", None)
+def signal_selector(signals, idx=0, idn=0, global_params={}):
+    if isinstance(signals, dict):
+        clean_sigs = signals[CLEAN]
+        clean = clean_sigs[idx % len(clean_sigs)]
+        if "buffers" not in clean:
+            load_buffers_custom(clean)
+        noise_sigs = signals[NOISY]
+        noise = noise_sigs[idn % len(noise_sigs)]
+        if "buffers" not in noise:
+            load_buffers_custom(noise)
+        cbuf, nbuf = clean["buffers"], noise["buffers"]
+        min_length = min(cbuf.shape[-1], nbuf.shape[-1])
+        signal = {
+            PATHS: {
+                CLEAN: clean[PATHS],
+                NOISY: noise[PATHS]
+
+            },
+            "buffers": {
+                CLEAN: cbuf[..., :1, :min_length],
+                NOISY: nbuf[..., :1, :min_length],
+            },
+        }
+    else:
+        # signals are loaded in CPU
+        signal = signals[idx % len(signals)]
+        if "buffers" not in signal:
+            load_buffers(signal)
+        global_params["selected_info"] = signal["name"]
+        global_params["sampling_rate"] = signal["sampling_rate"]
+        global_params["premixed_snr"] = signal.get("premixed_snr", None)
     return signal
 
 
 @interactive(
-    snr=(0., [-4., 4.], "SNR [dB]")
+    snr=(0., [-10., 10.], "SNR [dB]")
 )
 def remix(signals, snr=0., global_params={}):
     signal = signals["buffers"][CLEAN]
@@ -208,7 +236,8 @@ def parse_command_line(parser: Batch = None) -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv):
+def main(argv: List[str]):
+    """Paired signals and noise in folders"""
     batch = Batch(argv)
     batch.set_io_description(
         input_help='input audio files',
@@ -239,3 +268,43 @@ def main(argv):
         visualization(all_signals, models_list, config_list, device=device)
     else:
         interactive_audio_separation_visualization(all_signals, models_list, config_list, gui=args.gui)
+
+
+def main_custom(argv: List[str]):
+    """Handle custom noise and custom signals
+    """
+    parser = parse_command_line()
+    parser.add_argument("-s", "--signal", type=str, required=True, nargs="+", help="Signal to be preloaded")
+    parser.add_argument("-n", "--noise", type=str, required=True, nargs="+", help="Noise to be preloaded")
+    args = parser.parse_args(argv)
+    exp = args.experiments[0]
+    device = args.device
+    models_list = []
+    config_list = []
+    logging.info(f"Loading experiments models {args.experiments}")
+    for exp in args.experiments:
+        model_dir = Path(args.model_root)
+        short_name, model, config, _dl = get_experience(exp)
+        _, exp_dir = get_output_folder(config, root_dir=model_dir, override=False)
+        assert exp_dir.exists(), f"Experiment {short_name} does not exist in {model_dir}"
+        model.eval()
+        model.to(device)
+        model, __optimizer, epoch, config = load_checkpoint(model, exp_dir, epoch=None, device=args.device)
+        config[SHORT_NAME] = short_name
+        models_list.append(model)
+        config_list.append(config)
+    all_signals = {}
+    for args_paths, key in zip([args.signal, args.noise], [CLEAN, NOISY]):
+        new_argv = ["-i"] + args_paths
+        if args.preload:
+            new_argv += ["--preload"]
+        batch = Batch(new_argv)
+        new_parser = parse_command_line_generic_audio_load()
+        batch.set_io_description(
+            input_help=argparse.SUPPRESS,  # 'input audio files',
+            output_help=argparse.SUPPRESS
+        )
+        batch.set_multiprocessing_enabled(False)
+        _ = batch.parse_args(new_parser)
+        all_signals[key] = batch.run(generic_audio_loading_batch)
+    interactive_audio_separation_visualization(all_signals, models_list, config_list, gui=args.gui)
