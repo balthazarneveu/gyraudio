@@ -2,7 +2,7 @@ from batch_processing import Batch
 import argparse
 import sys
 from pathlib import Path
-from gyraudio.audio_separation.properties import CLEAN, NOISY, MIXED, PATHS, BUFFERS, NAME
+from gyraudio.audio_separation.properties import CLEAN, NOISY, MIXED, PATHS, BUFFERS, NAME, SAMPLING_RATE
 from gyraudio.io.audio import load_audio_tensor
 
 
@@ -27,7 +27,7 @@ def load_buffers(signal: dict, device="cpu") -> None:
         NOISY: noisy_signal,
         MIXED: mixed_signal
     }
-    signal["sampling_rate"] = sampling_rate
+    signal[SAMPLING_RATE] = sampling_rate
 
 
 def audio_loading(input: Path, preload: bool) -> dict:

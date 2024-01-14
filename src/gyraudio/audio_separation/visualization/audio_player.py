@@ -1,4 +1,4 @@
-from gyraudio.audio_separation.properties import CLEAN, NOISY, MIXED, PREDICTED
+from gyraudio.audio_separation.properties import CLEAN, NOISY, MIXED, PREDICTED, SAMPLING_RATE
 from pathlib import Path
 from gyraudio.io.audio import save_audio_tensor
 from gyraudio import root_dir
@@ -43,7 +43,7 @@ def audio_selector(sig, mixed, pred, global_params={}, player=MUTE):
 @interactive(
     loop=KeyboardControl(True, keydown="l"))
 def audio_trim(audio_track, global_params={}, loop=True):
-    sampling_rate = global_params.get("sampling_rate", 8000)
+    sampling_rate = global_params.get(SAMPLING_RATE, 8000)
     if global_params.get("trim", False):
         start, end = global_params["trim"]["start"], global_params["trim"]["end"]
         remainder = (end-start) % 8
@@ -64,7 +64,7 @@ def audio_trim(audio_track, global_params={}, loop=True):
     volume=(100, [0, 1000], "volume"),
 )
 def audio_player(audio_trim, global_params={}, volume=100):
-    sampling_rate = global_params.get("sampling_rate", 8000)
+    sampling_rate = global_params.get(SAMPLING_RATE, 8000)
     try:
         if global_params.get(MUTE, True):
             global_params["__stop"]()
@@ -76,7 +76,7 @@ def audio_player(audio_trim, global_params={}, volume=100):
             audio_track_path = ping_pong_path/f"_tmp_{ping_pong_index}.wav"
             ping_pong_index = (ping_pong_index + 1) % 10
             save_audio_tensor(audio_track_path, volume/100.*audio_trim,
-                              sampling_rate=global_params.get("sampling_rate", sampling_rate))
+                              sampling_rate=global_params.get(SAMPLING_RATE, sampling_rate))
             global_params["__set_audio"](audio_track_path)
             global_params["__play"]()
     except Exception as exc:

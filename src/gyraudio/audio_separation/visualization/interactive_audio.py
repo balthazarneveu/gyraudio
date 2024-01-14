@@ -5,7 +5,7 @@ from gyraudio.audio_separation.experiment_tracking.experiments import get_experi
 from gyraudio.audio_separation.experiment_tracking.storage import get_output_folder
 from gyraudio.default_locations import EXPERIMENT_STORAGE_ROOT
 from gyraudio.audio_separation.properties import (
-    SHORT_NAME, CLEAN, NOISY, MIXED, PREDICTED, ANNOTATIONS, PATHS
+    SHORT_NAME, CLEAN, NOISY, MIXED, PREDICTED, ANNOTATIONS, PATHS, BUFFERS, SAMPLING_RATE, NAME
 )
 import torch
 from gyraudio.audio_separation.experiment_tracking.storage import load_checkpoint
@@ -38,19 +38,19 @@ def signal_selector(signals, idx=0, idn=0, global_params={}):
     if isinstance(signals, dict):
         clean_sigs = signals[CLEAN]
         clean = clean_sigs[idx % len(clean_sigs)]
-        if "buffers" not in clean:
+        if BUFFERS not in clean:
             load_buffers_custom(clean)
         noise_sigs = signals[NOISY]
         noise = noise_sigs[idn % len(noise_sigs)]
-        if "buffers" not in noise:
+        if BUFFERS not in noise:
             load_buffers_custom(noise)
-        cbuf, nbuf = clean["buffers"], noise["buffers"]
-        if clean["sampling_rate"] != LEARNT_SAMPLING_RATE:
-            cbuf = resample(cbuf, clean["sampling_rate"], LEARNT_SAMPLING_RATE)
-            clean["sampling_rate"] = LEARNT_SAMPLING_RATE
-        if noise["sampling_rate"] != LEARNT_SAMPLING_RATE:
-            nbuf = resample(nbuf, noise["sampling_rate"], LEARNT_SAMPLING_RATE)
-            noise["sampling_rate"] = LEARNT_SAMPLING_RATE
+        cbuf, nbuf = clean[BUFFERS], noise[BUFFERS]
+        if clean[SAMPLING_RATE] != LEARNT_SAMPLING_RATE:
+            cbuf = resample(cbuf, clean[SAMPLING_RATE], LEARNT_SAMPLING_RATE)
+            clean[SAMPLING_RATE] = LEARNT_SAMPLING_RATE
+        if noise[SAMPLING_RATE] != LEARNT_SAMPLING_RATE:
+            nbuf = resample(nbuf, noise[SAMPLING_RATE], LEARNT_SAMPLING_RATE)
+            noise[SAMPLING_RATE] = LEARNT_SAMPLING_RATE
         min_length = min(cbuf.shape[-1], nbuf.shape[-1])
         min_length = min_length - min_length % 1024
         signal = {
@@ -59,22 +59,22 @@ def signal_selector(signals, idx=0, idn=0, global_params={}):
                 NOISY: noise[PATHS]
 
             },
-            "buffers": {
+            BUFFERS: {
                 CLEAN: cbuf[..., :1, :min_length],
                 NOISY: nbuf[..., :1, :min_length],
             },
-            "name": f"Clean={clean['name']} | Noise={noise['name']}",
-            "sampling_rate": LEARNT_SAMPLING_RATE
+            NAME: f"Clean={clean[NAME]} | Noise={noise[NAME]}",
+            SAMPLING_RATE: LEARNT_SAMPLING_RATE
         }
     else:
         # signals are loaded in CPU
         signal = signals[idx % len(signals)]
-        if "buffers" not in signal:
+        if BUFFERS not in signal:
             load_buffers(signal)
         global_params["premixed_snr"] = signal.get("premixed_snr", None)
-        signal["name"] = f"File={signal['name']}"
-    global_params["selected_info"] = signal['name']
-    global_params["sampling_rate"] = signal["sampling_rate"]
+        signal[NAME] = f"File={signal[NAME]}"
+    global_params["selected_info"] = signal[NAME]
+    global_params[SAMPLING_RATE] = signal[SAMPLING_RATE]
     return signal
 
 
@@ -82,8 +82,8 @@ def signal_selector(signals, idx=0, idn=0, global_params={}):
     snr=(0., [-10., 10.], "SNR [dB]")
 )
 def remix(signals, snr=0., global_params={}):
-    signal = signals["buffers"][CLEAN]
-    noisy = signals["buffers"][NOISY]
+    signal = signals[BUFFERS][CLEAN]
+    noisy = signals[BUFFERS][NOISY]
     alpha = 10 ** (-snr / 20) * torch.norm(signal) / torch.norm(noisy)
     mixed_signal = signal + alpha * noisy
     global_params["snr"] = snr
@@ -93,9 +93,9 @@ def remix(signals, snr=0., global_params={}):
 @interactive(std_dev=Control(0., value_range=[0., 0.1], name="extra noise std", step=0.0001),
              amplify=(1., [0., 10.], "amplification of everything"))
 def augment(signals, mixed, std_dev=0., amplify=1.):
-    signals["buffers"][MIXED] *= amplify
-    signals["buffers"][NOISY] *= amplify
-    signals["buffers"][CLEAN] *= amplify
+    signals[BUFFERS][MIXED] *= amplify
+    signals[BUFFERS][NOISY] *= amplify
+    signals[BUFFERS][CLEAN] *= amplify
     mixed = mixed*amplify+torch.randn_like(mixed)*std_dev
     return signals, mixed
 
@@ -154,15 +154,15 @@ def visualize_audio(signal: dict, mixed_signal, pred, zoom=1, zoomy=0., center=0
     """Create curves
     """
     zval = 1.5**zoom
-    start_idx, end_idx, _skip_factor = get_trim(signal["buffers"][CLEAN][0, :], zval, center)
+    start_idx, end_idx, _skip_factor = get_trim(signal[BUFFERS][CLEAN][0, :], zval, center)
     global_params["trim"] = dict(start=start_idx, end=end_idx)
     selected = global_params.get("selected_audio", MIXED)
-    clean = SingleCurve(y=zin(signal["buffers"][CLEAN][0, :], zval, center),
+    clean = SingleCurve(y=zin(signal[BUFFERS][CLEAN][0, :], zval, center),
                         alpha=1.,
                         style="k-",
                         linewidth=0.9,
                         label=("*" if selected == CLEAN else " ")+"clean")
-    noisy = SingleCurve(y=zin(signal["buffers"][NOISY][0, :], zval, center),
+    noisy = SingleCurve(y=zin(signal[BUFFERS][NOISY][0, :], zval, center),
                         alpha=0.3,
                         style="y--",
                         linewidth=1,
@@ -172,7 +172,7 @@ def visualize_audio(signal: dict, mixed_signal, pred, zoom=1, zoomy=0., center=0
                         alpha=0.1,
                         linewidth=2,
                         label=("*" if selected == MIXED else " ") + "mixed")
-    # true_mixed = SingleCurve(y=zin(signal["buffers"][MIXED][0, :], zval, center),
+    # true_mixed = SingleCurve(y=zin(signal[BUFFERS][MIXED][0, :], zval, center),
     #                          alpha=0.3, style="b-", linewidth=1, label="true mixed")
     pred.y = zin(pred.y, zval, center)
     pred.label = ("*" if selected == PREDICTED else " ") + pred.label
@@ -220,15 +220,14 @@ def visualization(
     device="cuda"
 ):
     for signal in all_signals:
-        print(signal["name"])
-        if "buffers" not in signal:
+        if BUFFERS not in signal:
             load_buffers(signal, device="cpu")
-        clean = SingleCurve(y=signal["buffers"][CLEAN][0, :], label="clean")
-        noisy = SingleCurve(y=signal["buffers"][NOISY][0, :], label="noise", alpha=0.3)
+        clean = SingleCurve(y=signal[BUFFERS][CLEAN][0, :], label="clean")
+        noisy = SingleCurve(y=signal[BUFFERS][NOISY][0, :], label="noise", alpha=0.3)
         curves = [clean, noisy]
         for config, model in zip(config_list, model_list):
             short_name = config.get(SHORT_NAME, "unknown")
-            predicted_signal, predicted_noise = model(signal["buffers"][MIXED].to(device).unsqueeze(0))
+            predicted_signal, predicted_noise = model(signal[BUFFERS][MIXED].to(device).unsqueeze(0))
             predicted = SingleCurve(y=predicted_signal.squeeze(0)[0, :].detach().cpu().numpy(),
                                     label=f"predicted_{short_name}")
             curves.append(predicted)
