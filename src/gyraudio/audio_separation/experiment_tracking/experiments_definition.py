@@ -26,6 +26,58 @@ def exp_unit_test(config, model: bool = None, minor=None):
         model = FlatConvolutional()
     return config, model
 
+# ---------------- Low Baseline -----------------
+
+
+def exp_low_baseline(
+    config: dict,
+    batch_size: int = 16,
+    h_dim: int = 16,
+    k_size: int = 9,
+    dilation: int = 0,
+    model: bool = None,
+    minor=None
+):
+    config[BATCH_SIZE] = [batch_size, batch_size, batch_size]
+    config[NAME] = "Flat Convolutional"
+    config[ANNOTATIONS] = f"Baseline H={h_dim}_K={k_size}"
+    if dilation > 1:
+        config[ANNOTATIONS] += f"_dil={dilation}"
+    config["Architecture"] = {
+        "name": "Flat-Conv",
+        "h_dim": h_dim,
+        "scales": 1,
+        "k_size": k_size,
+        "dilation": dilation
+    }
+    if model is None:
+        model = FlatConvolutional(k_size=k_size, h_dim=h_dim)
+    return config, model
+
+
+@registered_experiment(major=1)
+def exp_1(config, model: bool = None, minor=None):
+    config, model = exp_low_baseline(config, batch_size=32, k_size=5)
+    return config, model
+
+
+@registered_experiment(major=2)
+def exp_2(config, model: bool = None, minor=None):
+    config, model = exp_low_baseline(config, batch_size=32, k_size=9)
+    return config, model
+
+
+@registered_experiment(major=3)
+def exp_3(config, model: bool = None, minor=None):
+    config, model = exp_low_baseline(config, batch_size=32, k_size=9, dilation=2)
+    return config, model
+
+
+@registered_experiment(major=4)
+def exp_4(config, model: bool = None, minor=None):
+    config, model = exp_low_baseline(config, batch_size=16, k_size=9)
+    return config, model
+
 # ------------------ Res U-Net ------------------
 
 
