@@ -4,8 +4,9 @@ from typing import Optional
 import torch
 from torch.utils.data import default_collate
 from typing import Tuple
+from functools import partial
 from gyraudio.audio_separation.properties import (
-    AUG_AWGN, AUG_RESCALE
+    AUG_AWGN, AUG_RESCALE, AUG_TRIM, LENGTHS, LENGTH_DIVIDER, TRIM_PROB
 )
 
 
@@ -23,7 +24,12 @@ class AudioDataset(Dataset):
         self.snr_filter = snr_filter
         self.load_data()
         self.length = len(self.file_list)
-
+        self.collate_fn = None
+        if AUG_TRIM in self.augmentation_config:
+            self.collate_fn = partial(collate_fn_generic, 
+                                      lengths_lim = self.augmentation_config[AUG_TRIM][LENGTHS],
+                                        length_divider = self.augmentation_config[AUG_TRIM][LENGTH_DIVIDER],
+                                         trim_prob = self.augmentation_config[AUG_TRIM][TRIM_PROB])
     def filter_data(self, snr):
         if self.snr_filter is None:
             return True
@@ -60,7 +66,7 @@ class AudioDataset(Dataset):
         raise NotImplementedError("__getitem__ method must be implemented")
 
 
-def trim_collate_mix(batch) -> Tuple[torch.Tensor, torch.Tensor]:
+def collate_fn_generic(batch, lengths_lim, length_divider = 1024, trim_prob = 0.5) -> Tuple[torch.Tensor, torch.Tensor]:
     """Collate function to allow trimming (=crop the time dimension) of the signals in a batch.
 
     Args:
@@ -68,6 +74,9 @@ def trim_collate_mix(batch) -> Tuple[torch.Tensor, torch.Tensor]:
     - mixed_audio_signal
     - clean_audio_signal
     - noise_audio_signal
+    lengths_lim (list) : A list of containing a minimum length (0) and a maximum length (1)
+    length_divider (int) : has to be a trimmed length divider
+    trim_prob (float) : trimming probability
 
     Returns:
     - Tensor: A batch of mixed_audio_signal, trimmed to the same length.
@@ -78,11 +87,12 @@ def trim_collate_mix(batch) -> Tuple[torch.Tensor, torch.Tensor]:
     # Find the length of the shortest signal in the batch
     mixed_audio_signal, clean_audio_signal, noise_audio_signal = default_collate(batch)
     length = mixed_audio_signal[0].shape[-1]
-    take_full_signal = torch.rand(1) > 0.5
+    min_length, max_length = lengths_lim
+    take_full_signal = torch.rand(1) > trim_prob
     if not take_full_signal:
-        trim_length = torch.randint(2048, length-1, (1,))
-        trim_length = trim_length-trim_length % 1024
-        start = torch.randint(0, length-trim_length, (1,))
+        start = torch.randint(0, length-min_length, (1,))
+        trim_length = torch.randint(min_length, min(max_length, length-start-1), (1,))
+        trim_length = trim_length-trim_length % length_divider
         end = start + trim_length
         mixed_audio_signal = mixed_audio_signal[..., start:end]
         clean_audio_signal = clean_audio_signal[..., start:end]

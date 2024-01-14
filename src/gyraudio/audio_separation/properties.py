@@ -24,6 +24,12 @@ AUG_TRIM = "trim"  # trim batches to arbitrary length
 AUG_AWGN = "awgn"  # add white gaussian noise
 AUG_RESCALE = "rescale"  # rescale all signals arbitrarily
 
+# Trim types
+LENGTHS = "lengths" # a list of min and max length
+LENGTH_DIVIDER = "length_divider" # an int that divides the length
+TRIM_PROB = "trim_probability" # a float in [0, 1] of trimming probability
+
+
 # Training configuration properties (keys)
 
 OPTIMIZER = "optimizer"
