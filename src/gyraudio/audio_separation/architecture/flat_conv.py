@@ -13,16 +13,21 @@ class FlatConvolutional(SeparationModel):
                  ch_out: int = 2,
                  h_dim=16,
                  k_size=5,
+                 dilation=1
                  ) -> None:
         super().__init__()
         self.conv1 = torch.nn.Conv1d(
-            ch_in, h_dim, k_size, padding=k_size//2)
+            ch_in, h_dim, k_size, 
+            dilation=dilation, padding=dilation*(k_size//2))
         self.conv2 = torch.nn.Conv1d(
-            h_dim, h_dim, k_size, padding=k_size//2)
+            h_dim, h_dim, k_size,
+            dilation=dilation, padding=dilation*(k_size//2))
         self.conv3 = torch.nn.Conv1d(
-            h_dim, h_dim, k_size, padding=k_size//2)
+            h_dim, h_dim, k_size,
+            dilation=dilation, padding=dilation*(k_size//2))
         self.conv4 = torch.nn.Conv1d(
-            h_dim, h_dim, k_size, padding=k_size//2)
+            h_dim, h_dim, k_size,
+            dilation=dilation, padding=dilation*(k_size//2))
         self.pool = torch.nn.MaxPool1d(kernel_size=2)
         self.relu = torch.nn.ReLU()
         self.encoder = torch.nn.Sequential(
