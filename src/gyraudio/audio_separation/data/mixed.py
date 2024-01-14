@@ -33,20 +33,7 @@ class MixedAudioDataset(AudioDataset):
         clean_audio_signal, sampling_rate = torchaudio.load(str(signal_path))
         noise_audio_signal, sampling_rate = torchaudio.load(str(noise_path))
         self.sampling_rate = sampling_rate
-        if AUG_RESCALE in self.augmentation_config:
-            current_amplitude = 0.5 + 1.5*torch.rand(1, device=mixed_audio_signal.device)
-            # logging.debug(current_amplitude)
-            mixed_audio_signal *= current_amplitude
-            noise_audio_signal *= current_amplitude
-            clean_audio_signal *= current_amplitude
-        if AUG_AWGN in self.augmentation_config:
-            # noise_std = self.augmentation_config[AUG_AWGN]["noise_std"]
-            noise_std = 0.01
-            current_noise_std = torch.randn(1) * noise_std
-            # logging.debug(current_noise_std)
-            extra_awgn = torch.randn(mixed_audio_signal.shape, device=mixed_audio_signal.device) * current_noise_std
-            mixed_audio_signal = mixed_audio_signal+extra_awgn
-            # Open question: should we add noise to the noise signal aswell?
+        mixed_audio_signal, clean_audio_signal, noise_audio_signal = self.augment_data(mixed_audio_signal, clean_audio_signal, noise_audio_signal)
         if self.debug:
             logging.debug(f"{mixed_audio_signal.shape}")
             logging.debug(f"{clean_audio_signal.shape}")

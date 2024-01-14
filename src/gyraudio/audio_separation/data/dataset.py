@@ -4,6 +4,9 @@ from typing import Optional
 import torch
 from torch.utils.data import default_collate
 from typing import Tuple
+from gyraudio.audio_separation.properties import (
+    AUG_AWGN, AUG_RESCALE
+)
 
 
 class AudioDataset(Dataset):
@@ -31,6 +34,24 @@ class AudioDataset(Dataset):
 
     def load_data(self):
         raise NotImplementedError("load_data method must be implemented")
+    
+    def augment_data(self, mixed_audio_signal, noise_audio_signal,  clean_audio_signal) :
+        if AUG_RESCALE in self.augmentation_config:
+            current_amplitude = 0.5 + 1.5*torch.rand(1, device=mixed_audio_signal.device)
+            # logging.debug(current_amplitude)
+            mixed_audio_signal *= current_amplitude
+            noise_audio_signal *= current_amplitude
+            clean_audio_signal *= current_amplitude
+        if AUG_AWGN in self.augmentation_config:
+            # noise_std = self.augmentation_config[AUG_AWGN]["noise_std"]
+            noise_std = 0.01
+            current_noise_std = torch.randn(1) * noise_std
+            # logging.debug(current_noise_std)
+            extra_awgn = torch.randn(mixed_audio_signal.shape, device=mixed_audio_signal.device) * current_noise_std
+            mixed_audio_signal = mixed_audio_signal+extra_awgn
+            # Open question: should we add noise to the noise signal aswell?
+
+        return mixed_audio_signal, clean_audio_signal, noise_audio_signal
 
     def __len__(self):
         return self.length
