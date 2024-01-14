@@ -68,8 +68,7 @@ def main(argv):
         config[SHORT_NAME] = short_name
         models_list.append(model)
         config_list.append(config)
-        # batch.run(audio_separation_processing, [model], [config])
-    logging.info(f"Starting inference:")
+    logging.info("Starting inference:")
     batch.run(audio_separation_processing, models_list, config_list)
 
 

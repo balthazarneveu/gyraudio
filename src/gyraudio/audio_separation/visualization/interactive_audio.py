@@ -126,6 +126,14 @@ def audio_sep_inference(mixed, models, configs, model: int = 0, global_params={}
     return predicted_signal, pred_curve
 
 
+def compute_metrics(pred, sig, global_params={}):
+    METRICS = "metrics"
+    target = sig[BUFFERS][CLEAN]
+    global_params[METRICS] = {}
+    global_params[METRICS]["MSE"] = torch.mean((target-pred.cpu())**2)
+    global_params[METRICS]["SNR"] = 10.*torch.log10(torch.sum(target**2)/torch.sum((target-pred.cpu())**2))
+
+
 def get_trim(sig, zoom, center, num_samples=300):
     N = len(sig)
     native_ds = N/num_samples
@@ -177,9 +185,14 @@ def visualize_audio(signal: dict, mixed_signal, pred, zoom=1, zoomy=0., center=0
     pred.y = zin(pred.y, zval, center)
     pred.label = ("*" if selected == PREDICTED else " ") + pred.label
     curves = [noisy, mixed, pred, clean]
-    title = f"SNR  {global_params['snr']:.1f} dB"
+    title = f"SNR  in {global_params['snr']:.1f} dB"
     if "selected_info" in global_params:
         title += f" | {global_params['selected_info']}"
+    title += "\n"
+    for metric_name, metric_value in global_params.get("metrics", {}).items():
+        title += f" | {metric_name} "
+        title += f"{metric_value:.2e}" if (abs(metric_value) < 1e-2 or abs(metric_value)
+                                           > 1000) else f"{metric_value:.2f}"
     # if global_params.get("premixed_snr", None) is not None:
     #     title += f"| Premixed SNR : {global_params['premixed_snr']:.1f} dB"
     return Curve(curves, ylim=[-0.04 * 1.5 ** zoomy, 0.04 * 1.5 ** zoomy], xlabel="Time index", ylabel="Amplitude", title=title)
@@ -191,6 +204,7 @@ def interactive_audio_separation_processing(signals, model_list, config_list):
     # sig, mixed = augment(sig, mixed)
     select_device()
     pred, pred_curve = audio_sep_inference(mixed, model_list, config_list)
+    compute_metrics(pred, sig)
     sound = audio_selector(sig, mixed, pred)
     curve = visualize_audio(sig, mixed, pred_curve)
     trimmed_sound = audio_trim(sound)
