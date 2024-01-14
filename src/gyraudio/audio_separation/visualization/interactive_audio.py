@@ -4,7 +4,9 @@ from pathlib import Path
 from gyraudio.audio_separation.experiment_tracking.experiments import get_experience
 from gyraudio.audio_separation.experiment_tracking.storage import get_output_folder
 from gyraudio.default_locations import EXPERIMENT_STORAGE_ROOT
-from gyraudio.audio_separation.properties import SHORT_NAME, CLEAN, NOISY, MIXED, PREDICTED, ANNOTATIONS, PATHS, GENERIC
+from gyraudio.audio_separation.properties import (
+    SHORT_NAME, CLEAN, NOISY, MIXED, PREDICTED, ANNOTATIONS, PATHS
+)
 import torch
 from gyraudio.audio_separation.experiment_tracking.storage import load_checkpoint
 from gyraudio.audio_separation.visualization.pre_load_audio import (
@@ -13,6 +15,7 @@ from gyraudio.audio_separation.visualization.pre_load_custom_audio import (
     parse_command_line_generic_audio_load, generic_audio_loading_batch,
     load_buffers_custom
 )
+from torchaudio.functional import resample
 from typing import List
 import numpy as np
 import logging
@@ -24,6 +27,7 @@ from interactive_pipe.graphical.mpl_gui import InteractivePipeMatplotlib
 from gyraudio.audio_separation.visualization.audio_player import audio_selector, audio_trim, audio_player
 
 default_device = "cuda" if torch.cuda.is_available() else "cpu"
+LEARNT_SAMPLING_RATE = 8000
 
 
 @interactive(
@@ -41,6 +45,9 @@ def signal_selector(signals, idx=0, idn=0, global_params={}):
         if "buffers" not in noise:
             load_buffers_custom(noise)
         cbuf, nbuf = clean["buffers"], noise["buffers"]
+        if clean["sampling_rate"] != LEARNT_SAMPLING_RATE:
+            cbuf = resample(cbuf, clean["sampling_rate"], LEARNT_SAMPLING_RATE)
+            clean["sampling_rate"] = LEARNT_SAMPLING_RATE
         min_length = min(cbuf.shape[-1], nbuf.shape[-1])
         signal = {
             PATHS: {
