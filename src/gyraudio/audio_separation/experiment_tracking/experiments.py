@@ -2,7 +2,7 @@ from gyraudio.default_locations import MIXED_AUDIO_ROOT
 from gyraudio.audio_separation.properties import (
     TRAIN, TEST, VALID, NAME, EPOCHS, LEARNING_RATE,
     OPTIMIZER, BATCH_SIZE, DATALOADER, AUGMENTATION,
-    SHORT_NAME
+    SHORT_NAME, AUG_TRIM, TRIM_PROB, LENGTH_DIVIDER, LENGTHS
 )
 from gyraudio.audio_separation.data.remixed_fixed import RemixedFixedAudioDataset
 from gyraudio.audio_separation.data.remixed_rnd import RemixedRandomAudioDataset
@@ -67,6 +67,12 @@ def get_experience(exp_major: int, exp_minor: int = 0, dry_run=False) -> Tuple[s
         })
     elif config[DATALOADER][NAME] == "remix":
         mixed_audio_root = MIXED_AUDIO_ROOT
+        aug_test = {}
+        if AUG_TRIM in config[DATALOADER].get(AUGMENTATION, {}):
+            aug_test = {
+                AUG_TRIM: {LENGTHS: [None, None], LENGTH_DIVIDER: config[DATALOADER][AUGMENTATION]
+                           [AUG_TRIM][LENGTH_DIVIDER], TRIM_PROB: -1.}
+            }
         dl_train = get_dataloader(
             {
                 TRAIN: get_config_dataloader(
@@ -85,7 +91,8 @@ def get_experience(exp_major: int, exp_minor: int = 0, dry_run=False) -> Tuple[s
                     audio_root=mixed_audio_root,
                     mode=TEST,
                     shuffle=False,
-                    batch_size=config[BATCH_SIZE][TEST]
+                    batch_size=config[BATCH_SIZE][TEST],
+                    augmentation=aug_test
                 )
             },
             audio_dataset=RemixedFixedAudioDataset

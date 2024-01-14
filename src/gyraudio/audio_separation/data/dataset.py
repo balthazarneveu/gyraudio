@@ -26,10 +26,11 @@ class AudioDataset(Dataset):
         self.length = len(self.file_list)
         self.collate_fn = None
         if AUG_TRIM in self.augmentation_config:
-            self.collate_fn = partial(collate_fn_generic, 
-                                      lengths_lim = self.augmentation_config[AUG_TRIM][LENGTHS],
-                                        length_divider = self.augmentation_config[AUG_TRIM][LENGTH_DIVIDER],
-                                         trim_prob = self.augmentation_config[AUG_TRIM][TRIM_PROB])
+            self.collate_fn = partial(collate_fn_generic,
+                                      lengths_lim=self.augmentation_config[AUG_TRIM][LENGTHS],
+                                      length_divider=self.augmentation_config[AUG_TRIM][LENGTH_DIVIDER],
+                                      trim_prob=self.augmentation_config[AUG_TRIM][TRIM_PROB])
+
     def filter_data(self, snr):
         if self.snr_filter is None:
             return True
@@ -40,8 +41,8 @@ class AudioDataset(Dataset):
 
     def load_data(self):
         raise NotImplementedError("load_data method must be implemented")
-    
-    def augment_data(self, mixed_audio_signal, clean_audio_signal, noise_audio_signal) :
+
+    def augment_data(self, mixed_audio_signal, clean_audio_signal, noise_audio_signal):
         if AUG_RESCALE in self.augmentation_config:
             current_amplitude = 0.5 + 1.5*torch.rand(1, device=mixed_audio_signal.device)
             # logging.debug(current_amplitude)
@@ -66,7 +67,7 @@ class AudioDataset(Dataset):
         raise NotImplementedError("__getitem__ method must be implemented")
 
 
-def collate_fn_generic(batch, lengths_lim, length_divider = 1024, trim_prob = 0.5) -> Tuple[torch.Tensor, torch.Tensor]:
+def collate_fn_generic(batch, lengths_lim, length_divider=1024, trim_prob=0.5) -> Tuple[torch.Tensor, torch.Tensor]:
     """Collate function to allow trimming (=crop the time dimension) of the signals in a batch.
 
     Args:
@@ -94,7 +95,10 @@ def collate_fn_generic(batch, lengths_lim, length_divider = 1024, trim_prob = 0.
         trim_length = torch.randint(min_length, min(max_length, length-start-1), (1,))
         trim_length = trim_length-trim_length % length_divider
         end = start + trim_length
-        mixed_audio_signal = mixed_audio_signal[..., start:end]
-        clean_audio_signal = clean_audio_signal[..., start:end]
-        noise_audio_signal = noise_audio_signal[..., start:end]
+    else:
+        start = 0
+        end = length - length % length_divider
+    mixed_audio_signal = mixed_audio_signal[..., start:end]
+    clean_audio_signal = clean_audio_signal[..., start:end]
+    noise_audio_signal = noise_audio_signal[..., start:end]
     return mixed_audio_signal, clean_audio_signal, noise_audio_signal
