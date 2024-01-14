@@ -49,6 +49,7 @@ def signal_selector(signals, idx=0, idn=0, global_params={}):
             cbuf = resample(cbuf, clean["sampling_rate"], LEARNT_SAMPLING_RATE)
             clean["sampling_rate"] = LEARNT_SAMPLING_RATE
         min_length = min(cbuf.shape[-1], nbuf.shape[-1])
+        min_length = min_length - min_length % 1024
         signal = {
             PATHS: {
                 CLEAN: clean[PATHS],
