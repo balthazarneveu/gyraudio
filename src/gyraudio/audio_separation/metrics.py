@@ -13,7 +13,7 @@ def snr(prediction: torch.Tensor, ground_truth: torch.Tensor, reduce="mean") -> 
     power_signal = torch.sum(ground_truth**2, dim=(-2, -1))
     power_error = torch.sum((prediction-ground_truth)**2, dim=(-2, -1))
     eps = torch.finfo(torch.float32).eps
-    snr_per_element = 10*torch.log10(power_signal+eps)/(power_error+eps)
+    snr_per_element = 10*torch.log10((power_signal+eps)/(power_error+eps))
     final_snr = torch.mean(snr_per_element) if reduce == "mean" else snr_per_element
     return final_snr
 
