@@ -25,4 +25,4 @@ class SeparationModel(torch.nn.Module):
         grad[..., out.shape[-1]//2] = torch.nan  # set NaN gradient at the middle of the output
         out.backward(gradient=grad)
         self.zero_grad()  # reset to avoid future problems
-        return torch.sum(input_tensor.grad.isnan())  # Count NaN in the input
+        return int(torch.sum(input_tensor.grad.isnan()).cpu())  # Count NaN in the input
