@@ -171,6 +171,55 @@ def exp_1004_waveunet(config, model: bool = None, minor=None):
     return config, model
 
 
+@registered_experiment(major=1005)
+def exp_1005_waveunet(config, model: bool = None, minor=None):
+    config[EPOCHS] = 150
+    config, model = exp_wave_unet(config, model=model, num_layers=7, channels_extension=16)
+    config[DATALOADER][AUGMENTATION] = {
+        AUG_TRIM: {LENGTHS: [8192, 80000], LENGTH_DIVIDER: 1024, TRIM_PROB: 0.8},
+        AUG_RESCALE: True
+    }
+    # 7 layers, ext +16 - Nvidia T500 4Gb RAM - 16 batch size
+    return config, model
+
+
+@registered_experiment(major=1006)
+def exp_1006_waveunet(config, model: bool = None, minor=None):
+    config[EPOCHS] = 150
+    config, model = exp_wave_unet(config, model=model, num_layers=11, channels_extension=16)
+    config[DATALOADER][AUGMENTATION] = {
+        AUG_TRIM: {LENGTHS: [8192, 80000], LENGTH_DIVIDER: 4096, TRIM_PROB: 0.8},
+        AUG_RESCALE: True
+    }
+    # 11 layers, ext +16 - Nvidia T500 4Gb RAM - 16 batch size
+    return config, model
+
+
+@registered_experiment(major=1007)
+def exp_1007_waveunet(config, model: bool = None, minor=None):
+    config[EPOCHS] = 150
+    config, model = exp_wave_unet(config, model=model, num_layers=9, channels_extension=16)
+    config[DATALOADER][AUGMENTATION] = {
+        AUG_TRIM: {LENGTHS: [8192, 80000], LENGTH_DIVIDER: 4096, TRIM_PROB: 0.8},
+        AUG_RESCALE: True
+    }
+    # 11 layers, ext +16 - Nvidia T500 4Gb RAM - 16 batch size
+    return config, model
+
+
+@registered_experiment(major=1008)
+def exp_1008_waveunet(config, model: bool = None, minor=None):
+    # CHEAP BASELINE
+    config[EPOCHS] = 150
+    config, model = exp_wave_unet(config, model=model, num_layers=4, channels_extension=16)
+    config[DATALOADER][AUGMENTATION] = {
+        AUG_TRIM: {LENGTHS: [8192, 80000], LENGTH_DIVIDER: 1024, TRIM_PROB: 0.8},
+        AUG_RESCALE: True
+    }
+    # 4 layers, ext +16 - Nvidia T500 4Gb RAM - 16 batch size
+    return config, model
+
+
 def get_experiment_generator(exp_major: int):
     assert exp_major in REGISTERED_EXPERIMENTS_LIST, f"Experiment {exp_major} not registered"
     exp_generator = REGISTERED_EXPERIMENTS_LIST[exp_major]
