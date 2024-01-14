@@ -49,7 +49,7 @@ def audio_loading(input: Path, preload: bool) -> dict:
     return signal
 
 
-def audio_loading_batch(input: Path, _output: Path, args: argparse.Namespace) -> dict:
+def audio_loading_batch(input: Path, args: argparse.Namespace) -> dict:
     """Wrapper to load audio files from a directory using batch_processing
     """
     return audio_loading(input, preload=args.preload)
@@ -59,7 +59,7 @@ def main(argv):
     batch = Batch(argv)
     batch.set_io_description(
         input_help='input audio files',
-        output_help='output directory'
+        output_help=argparse.SUPPRESS
     )
     parser = parse_command_line_audio_load()
     batch.parse_args(parser)
