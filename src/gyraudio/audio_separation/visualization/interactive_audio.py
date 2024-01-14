@@ -36,27 +36,13 @@ def signal_selector(signals, idx=0, global_params={}):
 
 
 @interactive(
-    dataset_mix=(True,),
-    snr=(0., [-4., 4.], "extra SNR amplification [dB]")
+    snr=(0., [-4., 4.], "SNR [dB]")
 )
-def remix(signals, dataset_mix=True, snr=0.):
-    # power_target_sqrt = 15.9054
-    power_target_sqrt = 16.
-    if dataset_mix:
-        mixed_signal = signals["buffers"][MIXED]
-        # Can be retrieved by :
-        # signal = signals["buffers"][CLEAN]
-        # noisy = signals["buffers"][NOISY]
-        # mixed_snr = 10 ** (signals.get("mixed_snr", np.NaN) / 10)
-        # mixed_signal = mixed_snr ** 0.5 * torch.norm(noisy) / torch.norm(signal) * signal + noisy
-        # mixed_signal = mixed_signal * torch.max(signals["buffers"][MIXED]) / torch.max(mixed_signal)
-        # or mixed_signal = mixed_signal * power_target_sqrt / torch.norm(mixed_signal)
-    else:
-        signal = signals["buffers"][CLEAN]
-        noisy = signals["buffers"][NOISY]
-        alpha = 10 ** (-snr / 20) * torch.norm(signal) / torch.norm(noisy)
-        mixed_signal = signal + alpha * noisy
-        mixed_signal = mixed_signal * power_target_sqrt / torch.norm(mixed_signal)
+def remix(signals, snr=0.):
+    signal = signals["buffers"][CLEAN]
+    noisy = signals["buffers"][NOISY]
+    alpha = 10 ** (-snr / 20) * torch.norm(signal) / torch.norm(noisy)
+    mixed_signal = signal + alpha * noisy
     return mixed_signal
 
 
@@ -143,9 +129,9 @@ def visualize_audio(signal: dict, mixed_signal, pred, zoom=1, zoomy=0., center=0
                         linewidth=2,
                         label=("*" if selected == MIXED else " ") + "mixed")
     true_mixed = SingleCurve(y=zin(signal["buffers"][MIXED][0, :], zval, center),
-                        alpha=0.3, style="b-", linewidth=1, label="true mixed")
+                             alpha=0.3, style="b-", linewidth=1, label="true mixed")
     pred.y = zin(pred.y, zval, center)
-    pred.label = ("*" if selected ==  PREDICTED else " ") + pred.label
+    pred.label = ("*" if selected == PREDICTED else " ") + pred.label
     curves = [noisy, mixed, pred, clean]
     title = f"Premixed SNR : {global_params['mixed_snr']:.1f} dB"
     return Curve(curves, ylim=[-0.04 * 1.5 ** zoomy, 0.04 * 1.5 ** zoomy], xlabel="Time index", ylabel="Amplitude", title=title)
