@@ -72,6 +72,45 @@ def exp_wave_unet(config: dict,
     return config, model
 
 
+@registered_experiment(major=1000)
+def exp_1000_waveunet(config, model: bool = None, minor=None):
+    config[EPOCHS] = 60
+    config, model = exp_wave_unet(config, model=model, num_layers=4, channels_extension=24)
+    # 4 layers, ext +24 - Nvidia T500 4Gb RAM - 16 batch size
+    return config, model
+
+
+@registered_experiment(major=1001)
+def exp_1001_waveunet(config, model: bool = None, minor=None):
+    # OVERFIT 1M param ?
+    config[EPOCHS] = 60
+    config, model = exp_wave_unet(config, model=model, num_layers=7, channels_extension=16)
+    # 7 layers, ext +16 - Nvidia T500 4Gb RAM - 16 batch size
+    return config, model
+
+
+@registered_experiment(major=1002)
+def exp_1002_waveunet(config, model: bool = None, minor=None):
+    # OVERFIT 1M param ?
+    config[EPOCHS] = 60
+    config, model = exp_wave_unet(config, model=model, num_layers=7, channels_extension=16)
+    config[DATALOADER][AUGMENTATION] = {
+        AUG_TRIM: {LENGTHS: [8192, 80000], LENGTH_DIVIDER: 1024, TRIM_PROB: 0.8},
+        AUG_RESCALE: True
+    }
+    # 7 layers, ext +16 - Nvidia T500 4Gb RAM - 16 batch size
+    return config, model
+
+
+@registered_experiment(major=1003)
+def exp_1003_waveunet(config, model: bool = None, minor=None):
+    # OVERFIT 2.3M params
+    config[EPOCHS] = 60
+    config, model = exp_wave_unet(config, model=model, num_layers=7, channels_extension=24)
+    # 7 layers, ext +24 - Nvidia RTX3060 6Gb RAM - 16 batch size
+    return config, model
+
+
 def get_experiment_generator(exp_major: int):
     assert exp_major in REGISTERED_EXPERIMENTS_LIST, f"Experiment {exp_major} not registered"
     exp_generator = REGISTERED_EXPERIMENTS_LIST[exp_major]
