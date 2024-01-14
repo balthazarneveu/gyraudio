@@ -1,6 +1,7 @@
 from gyraudio.audio_separation.architecture.flat_conv import FlatConvolutional
 from gyraudio.audio_separation.architecture.unet import ResUNet
 from gyraudio.audio_separation.architecture.wave_unet import WaveUNet
+import torch
 
 
 def test_rf():
@@ -17,3 +18,14 @@ def test_analytic_rf():
         rf_analytic = rf_analytic
         assert rf == rf_analytic
         print(f"RF={rf}")
+
+
+def test_inference_shapes_flat_conv():
+    # FIXME! This test is not working because the receptive field is not computed correctly
+    for dilation in [1, 2, 4, 8]:
+        model = FlatConvolutional(k_size=9, dilation=dilation)
+        rf = model.receptive_field()
+        print(f"{dilation=:} {rf=:}")
+        inp = torch.randn(1, 1, 2048)
+        outs, outn = model(inp)
+        assert outn.shape == outs.shape == inp.shape
