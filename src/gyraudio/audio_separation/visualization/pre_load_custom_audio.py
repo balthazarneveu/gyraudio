@@ -14,24 +14,20 @@ def parse_command_line_generic_audio_load() -> argparse.ArgumentParser:
     return parser
 
 
-def load_buffers(signal: dict, device="cpu", key=GENERIC) -> None:
-    generic_signal, sampling_rate = load_audio_tensor(signal[PATHS][key], device=device)
-    signal[BUFFERS] = {
-        key: generic_signal,
-    }
+def load_buffers_custom(signal: dict, device="cpu") -> None:
+    generic_signal, sampling_rate = load_audio_tensor(signal[PATHS], device=device)
+    signal[BUFFERS] = generic_signal
     signal["sampling_rate"] = sampling_rate
 
 
-def audio_loading(input: Path, preload: bool, key=GENERIC) -> dict:
+def audio_loading(input: Path, preload: bool) -> dict:
     name = input.name
     signal = {
         NAME: name,
-        PATHS: {
-            key: input,
-        }
+        PATHS: input,
     }
     if preload:
-        load_buffers(signal, key=key)
+        load_buffers_custom(signal)
     return signal
 
 
