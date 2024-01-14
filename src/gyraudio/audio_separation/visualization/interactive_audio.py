@@ -212,7 +212,7 @@ def main(argv):
     batch = Batch(argv)
     batch.set_io_description(
         input_help='input audio files',
-        output_help='output directory'
+        output_help=argparse.SUPPRESS
     )
     batch.set_multiprocessing_enabled(False)
     parser = parse_command_line()
