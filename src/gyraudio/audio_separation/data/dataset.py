@@ -92,7 +92,7 @@ def collate_fn_generic(batch, lengths_lim, length_divider=1024, trim_prob=0.5) -
     take_full_signal = torch.rand(1) > trim_prob
     if not take_full_signal:
         start = torch.randint(0, length-min_length, (1,))
-        trim_length = torch.randint(min_length, min(max_length, length-start-1), (1,))
+        trim_length = torch.randint(min_length, min(max_length, length-start-1)+1, (1,))
         trim_length = trim_length-trim_length % length_divider
         end = start + trim_length
     else:
