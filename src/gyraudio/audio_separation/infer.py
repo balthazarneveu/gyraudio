@@ -11,25 +11,29 @@ import json
 import torch
 from tqdm import tqdm
 import torchaudio
+import pandas as pd
+SAVE_IDX = "save_idx"
+SNR_IN = "snr_in"
+SNR_OUT = "snr_out"
 
-
-def launch_infer(exp: int, device: str = "cuda", model_dir: Path = None, output_dir: Path = None, force_reload = False, max_batches = 1):
-    short_name, model, config, dl = get_experience(exp)
+def launch_infer(exp: int, snr_filter : list = None, device: str = "cuda", model_dir: Path = None, output_dir: Path = EXPERIMENT_STORAGE_ROOT, force_reload = False, max_batches = 1):
+    short_name, model, config, dl = get_experience(exp, snr_filter_test=snr_filter)
     exists, exp_dir = get_output_folder(config, root_dir=model_dir, override=False)
     assert exp_dir.exists(), f"Experiment {short_name} does not exist in {model_dir}"
-    # assert exists, f"Experiment {short_name} does not exist in {model_dir}"
     model.eval()
     model.to(device)
     model, optimizer, epoch, config = load_checkpoint(model, exp_dir, epoch=None, device=device)
     if output_dir is not None:
         save_dir = output_dir/(exp_dir.name+"_infer"+f"_epoch_{epoch:04d}")
         save_dir.mkdir(parents=True, exist_ok=True)
+    
     with torch.no_grad():
         test_loss = 0.
         save_idx = 0
         best_snr_perf = 0
         worst_snr_perf = 0
         processed_batches = 0
+        total_df = pd.DataFrame({SAVE_IDX : [], SNR_IN : [], SNR_OUT : []})
         for step_index, (batch_mix, batch_signal, batch_noise) in tqdm(
                 enumerate(dl[TEST]), desc=f"Inference epoch {epoch}", total=len(dl[TEST])):
             batch_mix, batch_signal, batch_noise = batch_mix.to(
@@ -54,6 +58,8 @@ def launch_infer(exp: int, device: str = "cuda", model_dir: Path = None, output_
             batch_signal = batch_signal.detach().cpu()
             batch_mix = batch_mix.detach().cpu()
             for audio_idx in range(batch_output_signal.shape[0]):
+                new_row = pd.DataFrame({SAVE_IDX : save_idx, SNR_IN : float(snr_in[audio_idx]), SNR_OUT : float(snr_out[audio_idx])}, index = [0])
+                total_df = pd.concat([new_row, total_df.loc[:]], ignore_index=True)
                 audio_dict = {} 
                 audio_dict["SNR_IN"] = float(snr_in[audio_idx])
                 audio_dict["SNR_OUT"] = float(snr_out[audio_idx])
@@ -79,10 +85,14 @@ def launch_infer(exp: int, device: str = "cuda", model_dir: Path = None, output_
             if processed_batches >= max_batches :
                 break
     test_loss = test_loss/len(dl[TEST])
-    total_dict = {"BEST_SNR_SAVE" : int(best_save_idx), "BEST_SNR" : float(best_snr_perf), "WORST_SNR_SAVE" : int(worst_save_idx), "WORST_SNR" : float(worst_snr_perf), "LOSS" : float(test_loss)}
+    total_df.to_csv(save_dir/f"total_df.csv")
+
+    total_dict = {"N_SAMPLES" : len(total_df), "BEST_SNR_SAVE" : int(best_save_idx), "BEST_SNR" : float(best_snr_perf), "WORST_SNR_SAVE" : int(worst_save_idx), "WORST_SNR" : float(worst_snr_perf), "LOSS" : float(test_loss)}
     with open(save_dir/f"total_metrics.json", "w") as metrics_file :
         metrics_file.write(json.dumps(total_dict))
     print(f"Test loss: {test_loss:.3e}, \nbest snr performance: {best_save_idx} with {best_snr_perf:.1f}dB, \nworst snr performance: {worst_save_idx} with {worst_snr_perf:.1f}dB")
+
+    return save_dir/f"total_df.csv"
 
 
 def main(argv):
@@ -97,6 +107,8 @@ def main(argv):
                         help="Force reload files")
     parser_def.add_argument("-b", "--nb-batch", type=int, default=1,
                     help="Number of batches to process")
+    parser_def.add_argument("-s",  "--snr-filter", type=float, nargs="+", default=None,
+                    help="SNR filters on the inference dataloader")
     args = parser_def.parse_args(argv)
     for exp in args.experiments:
         launch_infer(
@@ -105,7 +117,8 @@ def main(argv):
             output_dir=Path(args.output_dir),
             device=args.device,
             force_reload=args.reload,
-            max_batches=args.nb_batch
+            max_batches=args.nb_batch,
+            snr_filter=args.snr_filter
         )
 
 
