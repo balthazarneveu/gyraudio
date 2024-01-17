@@ -7,7 +7,6 @@ from gyraudio.audio_separation.experiment_tracking.storage import get_output_fol
 from gyraudio.audio_separation.metrics import snr
 from pathlib import Path
 import sys
-import json
 import torch
 from tqdm import tqdm
 import torchaudio
@@ -35,6 +34,17 @@ def load_file(path : Path, keys : List[str]) -> pd.DataFrame :
         df.to_csv(path)
     return pd.read_csv(path)
 
+def already_inferred(record_df, new_record_df) :
+    already_exists = ((record_df[NAME] == new_record_df.at[0, NAME]) &
+        (record_df[SHORT_NAME] == new_record_df.at[0, SHORT_NAME]) &
+        (record_df[CURRENT_EPOCH] == new_record_df.at[0, CURRENT_EPOCH]) &
+        (record_df[NBATCH] == new_record_df.at[0, NBATCH]))
+    if new_record_df[SNR_FILTER].isnull().all() :
+        already_exists &= ((record_df[SNR_FILTER]).isnull())
+    else :
+        already_exists &= (record_df[SNR_FILTER] == str(new_record_df.at[0, SNR_FILTER]))
+    return already_exists.any()
+
 def launch_infer(exp: int, snr_filter : list = None, device: str = "cuda", model_dir: Path = None, output_dir: Path = EXPERIMENT_STORAGE_ROOT, force_reload = False, max_batches = None):
     # Load experience
     if snr_filter is not None :
@@ -57,15 +67,7 @@ def launch_infer(exp: int, snr_filter : list = None, device: str = "cuda", model
             SNR_FILTER: [None],
         }, index = [0], columns = RECORD_KEYS)
         new_record_row.at[0, SNR_FILTER] = snr_filter
-        already_exists = ((record_df[NAME] == new_record_row.at[0, NAME]) &
-                (record_df[SHORT_NAME] == new_record_row.at[0, SHORT_NAME]) &
-                (record_df[CURRENT_EPOCH] == new_record_row.at[0, CURRENT_EPOCH]) &
-                (record_df[NBATCH] == new_record_row.at[0, NBATCH]))
-        if snr_filter is not None :
-            already_exists &= (record_df[SNR_FILTER] == str(new_record_row.at[0, SNR_FILTER]))
-        else :
-            already_exists &= ((record_df[SNR_FILTER]).isnull())
-        already_exists = already_exists.any()
+        already_exists = already_inferred(record_df, new_record_row)
         save_dir = output_dir/(exp_dir.name+"_infer"+ (f"_epoch_{epoch:04d}_nbatch_{max_batches if max_batches is not None else len(dl[TEST])}")
                                + ("" if snr_filter is None else f"_snrs_{'_'.join(map(str, snr_filter))}"))
         evaluation_path = save_dir/DEFAULT_EVALUATION_FILE
