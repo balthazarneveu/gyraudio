@@ -11,49 +11,47 @@ import pandas as pd
 from typing import List
 import torch
 from pathlib import Path
+DIFF_SNR = 'SNR out - SNR in'
 
 
 
 def get_app(record_row_dfs : pd.DataFrame, eval_dfs : List[pd.DataFrame]) :
     app = Dash(__name__)
-    names = [f"{record[SHORT_NAME]} - {record[NAME]} epoch {record[CURRENT_EPOCH]:04d}" for idx, record in record_row_dfs.iterrows()]
+    names_options = [{'label' : f"{record[SHORT_NAME]} - {record[NAME]} epoch {record[CURRENT_EPOCH]:04d}", 'value' : record[NAME] } for idx, record in record_row_dfs.iterrows()]
     app.layout = html.Div([
         html.H1(children='Inference results', style={'textAlign':'center'}),
-        dcc.Dropdown(names, names[0], id='dropdown-selection'),
+        dcc.Dropdown(names_options, names_options[0]['value'], id='exp-selection'),
+        dcc.RadioItems(['scatter', 'box'], 'box', inline=True, id='radio-plot-type'),
+        dcc.RadioItems([SNR_OUT, DIFF_SNR], DIFF_SNR, inline=True, id='radio-plot-out'),
         dcc.Graph(id='graph-content')
     ])
-    # eval_df = eval_df.sort_values(by=SNR_IN)
-    # app = Dash(__name__)
-    # fig = px.scatter(eval_df, x=SNR_IN, y=SNR_OUT, marginal_y="histogram")
-    # fig.add_trace(
-    #     go.Scatter(
-    #         x=eval_df[SNR_IN],
-    #         y=eval_df[SNR_IN],
-    #         mode="lines",
-    #         line=go.scatter.Line(color="gray"),
-    #         )
-    # )
-    # app.layout = html.Div([
-    #     html.H1(children='Visualize validation', style={'textAlign':'center'}),
-    #     dcc.Graph(id='graph-content', figure=fig),
-    #     # dash_table.DataTable(data=eval_df.sort_values(by=save_idx).to_dict('records'), page_size=10),
-    # ])
 
     @callback(
         Output('graph-content', 'figure'),
-        Input('dropdown-selection', 'value')
+        Input('exp-selection', 'value'),
+        Input('radio-plot-type', 'value'),
+        Input('radio-plot-out', 'value'),
     )
-    def update_graph(value):
-        id = (record_row_dfs.name == value).idxmax()
+    def update_graph(exp_selection, radio_plot_type, radio_plot_out):
+        id = (record_row_dfs.name == exp_selection).idxmax()
         record = record_row_dfs.loc[id]
         eval_df = eval_dfs[id].sort_values(by=SNR_IN)
-        title = f"SNR performance for experience {record[NAME]} in epoch {record[CURRENT_EPOCH]:04d}"
+        eval_df[DIFF_SNR] = eval_df[SNR_OUT] - eval_df[SNR_IN]
 
-        fig = px.scatter(eval_df, x=SNR_IN, y=SNR_OUT, title=title, marginal_y = "histogram", trendline='ols', trendline_color_override='darkblue')
+        title = f"SNR performance for experience {record[NAME]} in epoch {record[CURRENT_EPOCH]:04d} with {len(eval_df)} samples"
+        fig = px.scatter(eval_df, x=SNR_IN, y=radio_plot_out, title=title, trendline='ols') #, marginal_y = "histogram"
         fig.data[0].name = "Inference data"
         fig.data[0].showlegend = True
-        fig.data[1].name = "Least Square regression"
+        model = px.get_trendline_results(fig)
+        results = model.iloc[0]["px_fit_results"]
+        alpha = results.params[0]
+        beta = results.params[1]
+        fig.data[1].name = f"LS regression {radio_plot_out} = {alpha:.2f} + {beta:.2f} {SNR_IN}"
         fig.data[1].showlegend = True
+
+
+        eval_df[SNR_IN] = eval_df[SNR_IN].apply(lambda snr : round(snr))
+        fig2 = px.box(eval_df, x=SNR_IN, y=radio_plot_out, title=title) # ,points="all"
         # fig.add_trace(
         #     go.Scatter(
         #         x=eval_df[SNR_IN],
@@ -62,7 +60,11 @@ def get_app(record_row_dfs : pd.DataFrame, eval_dfs : List[pd.DataFrame]) :
         #         line=go.scatter.Line(color="gray"),
         #         )
         # ) 
-        return fig
+        if radio_plot_type == 'scatter' :
+            return fig
+        return fig2
+
+        
     
     return app
 
@@ -92,11 +94,13 @@ def main(argv):
                 snr_filter=args.snr_filter
             )
         eval_df = pd.read_csv(evaluation_path)
-        record_row_dfs = pd.concat([record_row_df, record_row_dfs.loc[:]], ignore_index=True)
+        # Careful, list order for concat is important for index matching eval_dfs list
+        record_row_dfs = pd.concat([record_row_dfs.loc[:], record_row_df], ignore_index=True)
         eval_dfs.append(eval_df)
     app = get_app(record_row_dfs, eval_dfs)
     app.run(debug=True)
 
 
 if __name__ == '__main__':
+    os.environ["KMP_DUPLICATE_LIB_OK"] = "True"
     main(sys.argv[1:])
