@@ -1,12 +1,13 @@
 from gyraudio.default_locations import EXPERIMENT_STORAGE_ROOT
 from gyraudio.audio_separation.parser import shared_parser
-from gyraudio.audio_separation.infer import launch_infer, RECORD_KEYS, SNR_OUT, SNR_IN, NBATCH
+from gyraudio.audio_separation.infer import launch_infer, RECORD_KEYS, SNR_OUT, SNR_IN, NBATCH, SAVE_IDX
 from gyraudio.audio_separation.properties import TEST, NAME, SHORT_NAME, CURRENT_EPOCH, SNR_FILTER 
 import sys
 import os
 from dash import Dash, html, dcc, callback, Output, Input, dash_table
 import plotly.express as px
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 import pandas as pd
 from typing import List
 import torch
@@ -17,52 +18,56 @@ DIFF_SNR = 'SNR out - SNR in'
 
 def get_app(record_row_dfs : pd.DataFrame, eval_dfs : List[pd.DataFrame]) :
     app = Dash(__name__)
-    names_options = [{'label' : f"{record[SHORT_NAME]} - {record[NAME]} epoch {record[CURRENT_EPOCH]:04d}", 'value' : record[NAME] } for idx, record in record_row_dfs.iterrows()]
+    # names_options = [{'label' : f"{record[SHORT_NAME]} - {record[NAME]} epoch {record[CURRENT_EPOCH]:04d}", 'value' : record[NAME] } for idx, record in record_row_dfs.iterrows()]
     app.layout = html.Div([
         html.H1(children='Inference results', style={'textAlign':'center'}),
-        dcc.Dropdown(names_options, names_options[0]['value'], id='exp-selection'),
-        dcc.RadioItems(['scatter', 'box'], 'box', inline=True, id='radio-plot-type'),
+        # dcc.Dropdown(names_options, names_options[0]['value'], id='exp-selection'),
+        # dcc.RadioItems(['scatter', 'box'], 'box', inline=True, id='radio-plot-type'),
         dcc.RadioItems([SNR_OUT, DIFF_SNR], DIFF_SNR, inline=True, id='radio-plot-out'),
         dcc.Graph(id='graph-content')
     ])
 
     @callback(
         Output('graph-content', 'figure'),
-        Input('exp-selection', 'value'),
-        Input('radio-plot-type', 'value'),
+        # Input('exp-selection', 'value'),
+        # Input('radio-plot-type', 'value'),
         Input('radio-plot-out', 'value'),
     )
-    def update_graph(exp_selection, radio_plot_type, radio_plot_out):
-        id = (record_row_dfs.name == exp_selection).idxmax()
-        record = record_row_dfs.loc[id]
-        eval_df = eval_dfs[id].sort_values(by=SNR_IN)
-        eval_df[DIFF_SNR] = eval_df[SNR_OUT] - eval_df[SNR_IN]
+    def update_graph(radio_plot_out) :
+        fig = make_subplots(rows = 2, cols = 1)
+        colors = px.colors.qualitative.Plotly
+        for id, record in record_row_dfs.iterrows() :
+            color = colors[id % len(colors)]
+            eval_df = eval_dfs[id].sort_values(by=SNR_IN)
+            eval_df[DIFF_SNR] = eval_df[SNR_OUT] - eval_df[SNR_IN]
+            legend = f'{record[SHORT_NAME]}_{record[NAME]}'
+            fig.add_trace(
+                go.Scatter(
+                    x=eval_df[SNR_IN], 
+                    y=eval_df[radio_plot_out], 
+                    mode="markers", marker={'color' : color}, 
+                    name=legend,
+                    hovertemplate = 'File : %{text}'+
+                        '<br>%{y}<br>',
+                    text = [f"{eval[SAVE_IDX]:.0f}" for idx, eval in eval_df.iterrows()]
+                    ),
+                row = 1, col = 1
+            )
+            eval_df_bins = eval_df
+            eval_df_bins[SNR_IN] = eval_df_bins[SNR_IN].apply(lambda snr : round(snr))
+            fig.add_trace(
+                go.Box(x=eval_df[SNR_IN], y=eval_df[radio_plot_out], fillcolor = color, marker={'color' : color}, showlegend=False),
+                row = 2, col = 1
+            )
 
-        title = f"SNR performance for experience {record[NAME]} in epoch {record[CURRENT_EPOCH]:04d} with {len(eval_df)} samples"
-        fig = px.scatter(eval_df, x=SNR_IN, y=radio_plot_out, title=title, trendline='ols') #, marginal_y = "histogram"
-        fig.data[0].name = "Inference data"
-        fig.data[0].showlegend = True
-        model = px.get_trendline_results(fig)
-        results = model.iloc[0]["px_fit_results"]
-        alpha = results.params[0]
-        beta = results.params[1]
-        fig.data[1].name = f"LS regression {radio_plot_out} = {alpha:.2f} + {beta:.2f} {SNR_IN}"
-        fig.data[1].showlegend = True
-
-
-        eval_df[SNR_IN] = eval_df[SNR_IN].apply(lambda snr : round(snr))
-        fig2 = px.box(eval_df, x=SNR_IN, y=radio_plot_out, title=title) # ,points="all"
-        # fig.add_trace(
-        #     go.Scatter(
-        #         x=eval_df[SNR_IN],
-        #         y=eval_df[SNR_IN],
-        #         mode="lines",
-        #         line=go.scatter.Line(color="gray"),
-        #         )
-        # ) 
-        if radio_plot_type == 'scatter' :
-            return fig
-        return fig2
+        title = f"SNR performances"
+        fig.update_layout(
+            title=title,
+            xaxis2_title = SNR_IN,
+            yaxis_title = radio_plot_out,
+            hovermode='x unified'
+            )
+        return fig
 
         
     
