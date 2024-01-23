@@ -28,7 +28,6 @@ class FlatConvolutional(SeparationModel):
         self.conv4 = torch.nn.Conv1d(
             h_dim, h_dim, k_size,
             dilation=dilation, padding=dilation*(k_size//2))
-        self.pool = torch.nn.MaxPool1d(kernel_size=2)
         self.relu = torch.nn.ReLU()
         self.encoder = torch.nn.Sequential(
             self.conv1,
