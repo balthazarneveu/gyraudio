@@ -16,7 +16,7 @@ class BaseConvolutionBlock(torch.nn.Module):
         super().__init__()
         self.conv = torch.nn.Conv1d(ch_in, ch_out, k_size, padding=k_size//2)
         self.non_linearity = get_non_linearity(activation)
-        self.dropout = torch.nn.Dropout(p=dropout)
+        self.dropout = torch.nn.Dropout1d(p=dropout)
 
     def forward(self, x_in: torch.Tensor) -> torch.Tensor:
         x = self.conv(x_in)  # [N, ch_in, T] -> [N, ch_in+channels_extension, T]
@@ -33,7 +33,7 @@ class EncoderStage(torch.nn.Module):
 
         super().__init__()
 
-        self.conv_block = BaseConvolutionBlock(ch_in, ch_out, k_size=k_size)
+        self.conv_block = BaseConvolutionBlock(ch_in, ch_out, k_size=k_size, dropout=dropout)
 
     def forward(self, x):
         x = self.conv_block(x)
@@ -97,7 +97,7 @@ class WaveUNet(SeparationModel):
             (num_layers+1)*channels_extension,
             k_size=k_conv_ds,
             dropout=dropout)
-        self.dropout = torch.nn.Dropout(p=dropout)
+        self.dropout = torch.nn.Dropout1d(p=dropout)
         self.target_modality_conv = torch.nn.Conv1d(channels_extension+ch_in, ch_out, 1)  # conv1x1 channel mixer
 
     def forward(self, x_in: torch.Tensor) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
