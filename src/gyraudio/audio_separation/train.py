@@ -130,6 +130,7 @@ def training_loop(model: torch.nn.Module, config: dict, dl, device: str = "cuda"
                 wandblogs[f"debug loss/{phase} loss total"] = costs[phase].total_metric[TOTAL]
                 wandblogs[f"debug loss/{phase} loss noise"] = costs[phase].total_metric[NOISE]
                 wandblogs[f"{phase} snr"] = costs[phase].total_metric[SNR]
+                wandblogs["learning rate"] = optimizer.param_groups[0]['lr']
             wandb.log(wandblogs)
         metrics[TRAIN] = costs[TRAIN].total_metric
         metrics[TEST] = costs[TEST].total_metric

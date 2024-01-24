@@ -8,7 +8,8 @@ from gyraudio.audio_separation.properties import (
     DATALOADER,
     WEIGHT_DECAY,
     AUGMENTATION, AUG_TRIM, AUG_AWGN, AUG_RESCALE,
-    LENGTHS, LENGTH_DIVIDER, TRIM_PROB
+    LENGTHS, LENGTH_DIVIDER, TRIM_PROB,
+    SCHEDULER, SCHEDULER_CONFIGURATION
 )
 from gyraudio.audio_separation.experiment_tracking.experiments_decorator import (
     registered_experiment, REGISTERED_EXPERIMENTS_LIST
@@ -22,6 +23,8 @@ def exp_unit_test(config, model: bool = None, minor=None):
     config[EPOCHS] = 2
     config[NAME] = "Unit Test - Flat Convolutional"
     config[ANNOTATIONS] = "Baseline"
+    config[SCHEDULER] = "ReduceLROnPlateau"
+    config[SCHEDULER_CONFIGURATION] = dict(patience=5, factor=0.8)
     if model is None:
         model = FlatConvolutional()
     return config, model
@@ -229,6 +232,17 @@ def exp_3000_waveunet(config, model: bool = None, minor=None):
     config[EPOCHS] = 120
     config, model = exp_wave_unet(config, model=model, num_layers=7, channels_extension=28, bias=False)
     # 7 layers, ext +28 - Nvidia RTX3060 6Gb RAM - 16 batch size
+    return config, model
+
+
+@registered_experiment(major=3001)
+def exp_3001_waveunet(config, model: bool = None, minor=None):
+    config[EPOCHS] = 200
+    config, model = exp_wave_unet(config, model=model, num_layers=7, channels_extension=28, bias=False)
+    # 7 layers, ext +28 - Nvidia RTX3060 6Gb RAM - 16 batch size
+    config[SCHEDULER] = "ReduceLROnPlateau"
+    config[SCHEDULER_CONFIGURATION] = dict(patience=5, factor=0.8)
+    config[OPTIMIZER][LEARNING_RATE] = 0.002
     return config, model
 
 
