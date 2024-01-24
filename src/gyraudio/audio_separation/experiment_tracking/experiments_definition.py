@@ -223,12 +223,14 @@ def exp_1008_waveunet(config, model: bool = None, minor=None):
     # 4 layers, ext +16 - Nvidia T500 4Gb RAM - 16 batch size
     return config, model
 
-@registered_experiment(major=2000)
-def exp_2000_waveunet(config, model: bool = None, minor=None):
+
+@registered_experiment(major=3000)
+def exp_3000_waveunet(config, model: bool = None, minor=None):
     config[EPOCHS] = 120
     config, model = exp_wave_unet(config, model=model, num_layers=7, channels_extension=28, bias=False)
     # 7 layers, ext +28 - Nvidia RTX3060 6Gb RAM - 16 batch size
     return config, model
+
 
 def get_experiment_generator(exp_major: int):
     assert exp_major in REGISTERED_EXPERIMENTS_LIST, f"Experiment {exp_major} not registered"
