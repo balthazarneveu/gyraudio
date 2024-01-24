@@ -104,17 +104,21 @@ def exp_wave_unet(config: dict,
                   k_conv_us: int = 5,
                   num_layers: int = 4,
                   dropout: float = 0.0,
+                  bias: bool = True,
                   model=None):
     config[NAME] = "Wave-UNet"
     config[ANNOTATIONS] = f"Wave-UNet-{num_layers}scales_h_ext={channels_extension}_k={k_conv_ds}ds-{k_conv_us}us"
     if dropout > 0:
         config[ANNOTATIONS] += f"-dr{dropout:.1e}"
+    if not bias:
+        config[ANNOTATIONS] += "-BiasFree"
     config["Architecture"] = {
         "k_conv_us": k_conv_us,
         "k_conv_ds": k_conv_ds,
         "num_layers": num_layers,
         "channels_extension": channels_extension,
-        "dropout": dropout
+        "dropout": dropout,
+        "bias": bias
     }
     if model is None:
         model = WaveUNet(
@@ -219,6 +223,12 @@ def exp_1008_waveunet(config, model: bool = None, minor=None):
     # 4 layers, ext +16 - Nvidia T500 4Gb RAM - 16 batch size
     return config, model
 
+@registered_experiment(major=2000)
+def exp_2000_waveunet(config, model: bool = None, minor=None):
+    config[EPOCHS] = 120
+    config, model = exp_wave_unet(config, model=model, num_layers=7, channels_extension=28, bias=False)
+    # 7 layers, ext +28 - Nvidia RTX3060 6Gb RAM - 16 batch size
+    return config, model
 
 def get_experiment_generator(exp_major: int):
     assert exp_major in REGISTERED_EXPERIMENTS_LIST, f"Experiment {exp_major} not registered"
