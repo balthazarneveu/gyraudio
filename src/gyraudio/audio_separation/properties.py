@@ -49,6 +49,10 @@ RECEPTIVE_FIELD = "receptive_field"
 SHORT_NAME = "short_name"
 
 
+# Scheduler
+SCHEDULER = "scheduler"
+SCHEDULER_CONFIGURATION = "scheduler_configuration"
+
 # Loss
 LOSS = "loss"
 LOSS_L2 = "MSE"

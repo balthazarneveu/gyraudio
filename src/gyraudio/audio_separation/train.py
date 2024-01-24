@@ -2,9 +2,10 @@ from gyraudio.audio_separation.experiment_tracking.experiments import get_experi
 from gyraudio.audio_separation.parser import shared_parser
 from gyraudio.audio_separation.properties import (
     TRAIN, TEST, EPOCHS, OPTIMIZER, NAME, MAX_STEPS_PER_EPOCH,
-    SIGNAL, NOISE, TOTAL, SNR
+    SIGNAL, NOISE, TOTAL, SNR, SCHEDULER, SCHEDULER_CONFIGURATION
 )
 from gyraudio.default_locations import EXPERIMENT_STORAGE_ROOT
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from gyraudio.audio_separation.experiment_tracking.storage import get_output_folder, save_checkpoint
 from gyraudio.audio_separation.metrics import Costs
 # from gyraudio.audio_separation.experiment_tracking.storage import load_checkpoint
@@ -61,6 +62,16 @@ def training_loop(model: torch.nn.Module, config: dict, dl, device: str = "cuda"
     optim_params.pop(NAME)
     if optim_name == "adam":
         optimizer = torch.optim.Adam(model.parameters(), **optim_params)
+
+    scheduler = None
+    scheduler_config = config.get(SCHEDULER_CONFIGURATION, {})
+    scheduler_name = config.get(SCHEDULER, False)
+    if scheduler_name:
+        if scheduler_name == "ReduceLROnPlateau":
+            scheduler = ReduceLROnPlateau(optimizer, mode='max', verbose=True, **scheduler_config)
+            logging.info(f"Using scheduler {scheduler_name} with config {scheduler_config}")
+        else:
+            raise NotImplementedError(f"Scheduler {scheduler_name} not implemented")
     max_steps = config.get(MAX_STEPS_PER_EPOCH, None)
     costs = {TRAIN:  Costs(TRAIN), TEST: Costs(TEST)}
     for epoch in range(config[EPOCHS]):
@@ -108,7 +119,8 @@ def training_loop(model: torch.nn.Module, config: dict, dl, device: str = "cuda"
                     batch_output_noise, batch_noise
                 )
         costs[TEST].finish_epoch()
-
+        if scheduler is not None and isinstance(scheduler, ReduceLROnPlateau):
+            scheduler.step(costs[TEST].total_metric[SNR])
         print(f"epoch {epoch}:\n{costs[TRAIN]}\n{costs[TEST]}")
         wandblogs = {}
         if wandb_flag:
