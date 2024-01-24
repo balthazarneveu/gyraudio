@@ -47,12 +47,12 @@ class DecoderStage(torch.nn.Module):
     """Upsample by 2, Concatenate with skip connection, Conv (and shrink channels)
     """
 
-    def __init__(self, ch_in: int, ch_out: int, k_size: int = 5, dropout: float = 0.) -> None:
+    def __init__(self, ch_in: int, ch_out: int, k_size: int = 5, dropout: float = 0., bias: bool = True) -> None:
         """Decoder stage
         """
 
         super().__init__()
-        self.conv_block = BaseConvolutionBlock(ch_in, ch_out, k_size=k_size, dropout=dropout)
+        self.conv_block = BaseConvolutionBlock(ch_in, ch_out, k_size=k_size, dropout=dropout, bias=bias)
         self.upsample = torch.nn.Upsample(scale_factor=2, mode="linear", align_corners=True)
 
     def forward(self, x_ds: torch.Tensor, x_skip: torch.Tensor) -> torch.Tensor:
@@ -100,7 +100,8 @@ class WaveUNet(SeparationModel):
             dropout=dropout,
             bias=bias)
         self.dropout = torch.nn.Dropout1d(p=dropout)
-        self.target_modality_conv = torch.nn.Conv1d(channels_extension+ch_in, ch_out, 1, bias=bias)  # conv1x1 channel mixer
+        self.target_modality_conv = torch.nn.Conv1d(
+            channels_extension+ch_in, ch_out, 1, bias=bias)  # conv1x1 channel mixer
 
     def forward(self, x_in: torch.Tensor) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
         """Forward UNET pass
