@@ -60,7 +60,7 @@ def main(argv):
         tmp_dir = ROOT_DIR/f"__tmp_{exp:04d}"
         tmp_dir.mkdir(exist_ok=True, parents=True)
         kaggle.api.kernels_output_cli(f"{kaggle_user['username']}/{nb_id}", path=str(tmp_dir))
-        subprocess.run(["tar", "-xzf", tmp_dir/"output.tgz", "__output"])
+        subprocess.run(["tar", "-xzf", tmp_dir/"output.tgz", "__output_audiosep"])
         import shutil
         shutil.rmtree(tmp_dir, ignore_errors=True)
         return
