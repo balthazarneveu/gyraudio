@@ -183,7 +183,7 @@ def exp_1004_waveunet(config, model: bool = None, minor=None):
     # 7 layers, ext +28 - Nvidia RTX3060 6Gb RAM - 16 batch size
     return config, model
 
-@registered_experiment(major=1004)
+@registered_experiment(major=1014)
 def exp_1014_waveunet(config, model: bool = None, minor=None):
     #trained with min and max mixing snr hard coded between -2 and -1
     config[EPOCHS] = 50
