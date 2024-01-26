@@ -2,7 +2,7 @@ from gyraudio.default_locations import MIXED_AUDIO_ROOT
 from gyraudio.audio_separation.properties import (
     TRAIN, TEST, VALID, NAME, EPOCHS, LEARNING_RATE,
     OPTIMIZER, BATCH_SIZE, DATALOADER, AUGMENTATION,
-    SHORT_NAME, AUG_TRIM, TRIM_PROB, LENGTH_DIVIDER, LENGTHS
+    SHORT_NAME, AUG_TRIM, TRIM_PROB, LENGTH_DIVIDER, LENGTHS, SNR_FILTER
 )
 from gyraudio.audio_separation.data.remixed_fixed import RemixedFixedAudioDataset
 from gyraudio.audio_separation.data.remixed_rnd import RemixedRandomAudioDataset
@@ -12,7 +12,7 @@ import torch
 from typing import Tuple
 
 
-def get_experience(exp_major: int, exp_minor: int = 0, dry_run=False) -> Tuple[str, torch.nn.Module, dict, dict]:
+def get_experience(exp_major: int, exp_minor: int = 0, snr_filter_test=None, dry_run=False) -> Tuple[str, torch.nn.Module, dict, dict]:
     """Get all experience details
 
     Args:
@@ -36,7 +36,8 @@ def get_experience(exp_major: int, exp_minor: int = 0, dry_run=False) -> Tuple[s
         DATALOADER: {
             NAME: dataloader_name,
         },
-        BATCH_SIZE: [16, 16, 16]
+        BATCH_SIZE: [16, 16, 16],
+        SNR_FILTER : snr_filter_test
     }
 
     model, config = get_experiment_generator(exp_major=exp_major)(config, no_model=dry_run, minor=exp_minor)
@@ -62,7 +63,8 @@ def get_experience(exp_major: int, exp_minor: int = 0, dry_run=False) -> Tuple[s
                 audio_root=mixed_audio_root,
                 mode=TEST,
                 shuffle=False,
-                batch_size=config[BATCH_SIZE][TEST]
+                batch_size=config[BATCH_SIZE][TEST],
+                snr_filter=config[SNR_FILTER]
             )
         })
     elif config[DATALOADER][NAME] == "remix":
@@ -91,8 +93,7 @@ def get_experience(exp_major: int, exp_minor: int = 0, dry_run=False) -> Tuple[s
                     audio_root=mixed_audio_root,
                     mode=TEST,
                     shuffle=False,
-                    batch_size=config[BATCH_SIZE][TEST],
-                    augmentation=aug_test
+                    batch_size=config[BATCH_SIZE][TEST]
                 )
             },
             audio_dataset=RemixedFixedAudioDataset
