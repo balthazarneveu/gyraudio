@@ -1,6 +1,7 @@
 from gyraudio.audio_separation.architecture.flat_conv import FlatConvolutional
 from gyraudio.audio_separation.architecture.unet import ResUNet
 from gyraudio.audio_separation.architecture.wave_unet import WaveUNet
+from gyraudio.audio_separation.architecture.neutral import NeutralModel
 from gyraudio.audio_separation.architecture.transformer import TransformerModel
 from gyraudio.audio_separation.properties import (
     NAME, ANNOTATIONS, MAX_STEPS_PER_EPOCH, EPOCHS, BATCH_SIZE,
@@ -14,6 +15,17 @@ from gyraudio.audio_separation.properties import (
 from gyraudio.audio_separation.experiment_tracking.experiments_decorator import (
     registered_experiment, REGISTERED_EXPERIMENTS_LIST
 )
+
+
+@registered_experiment(major=9999)
+def neutral(config, model: bool = None, minor=None):
+    config[BATCH_SIZE] = [4, 4, 4]
+    config[EPOCHS] = 1
+    config[NAME] = "Neutral"
+    config[ANNOTATIONS] = "Neutral"
+    if model is None:
+        model = NeutralModel()
+    return config, model
 
 
 @registered_experiment(major=0)
@@ -97,6 +109,7 @@ def exp_resunet(config, h_dim=16, k_size=5, model=None):
     if model is None:
         model = ResUNet(h_dim=h_dim, k_size=k_size)
     return config, model
+
 
 @registered_experiment(major=2000)
 def exp_2000_waveunet(config, model: bool = None, minor=None):
@@ -190,9 +203,10 @@ def exp_1004_waveunet(config, model: bool = None, minor=None):
     # 7 layers, ext +28 - Nvidia RTX3060 6Gb RAM - 16 batch size
     return config, model
 
+
 @registered_experiment(major=1014)
 def exp_1014_waveunet(config, model: bool = None, minor=None):
-    #trained with min and max mixing snr hard coded between -2 and -1
+    # trained with min and max mixing snr hard coded between -2 and -1
     config[EPOCHS] = 50
     config, model = exp_wave_unet(config, model=model, num_layers=7, channels_extension=28)
     # 7 layers, ext +28 - Nvidia RTX3060 6Gb RAM - 16 batch size
