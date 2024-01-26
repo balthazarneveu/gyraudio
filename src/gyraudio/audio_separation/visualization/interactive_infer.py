@@ -56,7 +56,13 @@ def get_app(record_row_dfs : pd.DataFrame, eval_dfs : List[pd.DataFrame]) :
             eval_df_bins = eval_df
             eval_df_bins[SNR_IN] = eval_df_bins[SNR_IN].apply(lambda snr : round(snr))
             fig.add_trace(
-                go.Box(x=eval_df[SNR_IN], y=eval_df[radio_plot_out], fillcolor = color, marker={'color' : color}, showlegend=False),
+                go.Box(
+                    x=eval_df[SNR_IN], 
+                    y=eval_df[radio_plot_out], 
+                    fillcolor = color, 
+                    marker={'color' : color},
+                    name = legend
+                    ),
                 row = 2, col = 1
             )
 
