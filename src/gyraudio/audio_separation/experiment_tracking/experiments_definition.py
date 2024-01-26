@@ -98,6 +98,12 @@ def exp_resunet(config, h_dim=16, k_size=5, model=None):
         model = ResUNet(h_dim=h_dim, k_size=k_size)
     return config, model
 
+@registered_experiment(major=2000)
+def exp_2000_waveunet(config, model: bool = None, minor=None):
+    config[EPOCHS] = 60
+    config, model = exp_resunet(config)
+    return config, model
+
 # ------------------ Wave U-Net ------------------
 
 
