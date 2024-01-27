@@ -1,4 +1,9 @@
 # Audio separation
+
+### :arrow_down: Dataset
+[Download dataset on kaggle](https://www.kaggle.com/datasets/balthazarneveu/audio-separation-dataset)
+Unzip into `__data_source_separation`
+
 ## :bug: Pytest
 
 ```bash
@@ -17,7 +22,11 @@ Each experiment is defined by:
 
 ### Defining experiments
 [Code to define new experiments](/src/gyraudio/audio_separation/experiment_tracking/experiments_definition.py)
-### Remote training
+
+### Seamless remote training on Kaggle
+
+
+![Training](/report/figures/overview.png)
 
 - :unlock: Create a [scripts/__kaggle_login.py](/scripts/__kaggle_login.py) file locally.
 ```python
@@ -54,7 +63,7 @@ This will create a dedicated folder for training a specific experiment with a de
 ### Local training
 `python scripts/audio_separation_train.py -e 1`
 
-### :bar_chart: [Experiment tracking](https://wandb.ai/balthazarneveu/audio-sep)
+### :bar_chart: [Experiment tracking](https://wandb.ai/teammd/audio-separation)
 
 ## Evaluation
 Run inference/evaluation from a checkpoint
@@ -62,16 +71,22 @@ Run inference/evaluation from a checkpoint
 
 ### :gear: Batch processing
 Process specific audio files
-`python scripts/audio_separation_batch.py -i __data_source_separation/source_separation/test/0000 -o __output_audio -e 1`
+`python scripts/audio_separation_batch.py -i '__data_source_separation/source_separation/test/00*' -o __output_audio -e 1`
 
 ### :play_or_pause_button: Interactive
 Check audio separation visually.
 ```
 python scripts/audio_separation_interactive.py -i __data_source_separation/source_separation/test/000* -o __output/batch_processing -e 1 --preload -p
 ```
-
-- :arrow_backward: :arrow_forward: = next audio `left` / `right`
-- :arrow_double_down: :arrow_double_up: = next model `page up` / `page down` (*compare models*)
+- Browse across samples:
+  - :arrow_left: :arrow_right: = next audio   (:two:/:eight:)
+  - :arrow_double_down: :arrow_double_up: = next model `page up` / `page down` (*compare models*)
+<!-- - :arrow_backward: :arrow_forward:  -->
+- Investigate a specific signal
+  - :mag: +/- Zoom in/out,
+  - :four: / :six: Navigate audio
+  - `L` trigger audio loop
+ 
 
 ### Dataloader
 [Mixed dataloader](/src/gyraudio/audio_separation/data/mixed.py)
