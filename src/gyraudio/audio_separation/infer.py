@@ -5,6 +5,7 @@ from gyraudio.default_locations import EXPERIMENT_STORAGE_ROOT
 from gyraudio.audio_separation.experiment_tracking.storage import load_checkpoint
 from gyraudio.audio_separation.experiment_tracking.storage import get_output_folder
 from gyraudio.audio_separation.metrics import snr
+from gyraudio.io.dump import Dump
 from pathlib import Path
 import sys
 import torch
@@ -121,8 +122,9 @@ def launch_infer(exp: int, snr_filter: list = None, device: str = "cuda", model_
                     batch_signal = batch_signal.detach().cpu()
                     batch_mix = batch_mix.detach().cpu()
                     for audio_idx in range(batch_output_signal.shape[0]):
-                        new_eval_row = pd.DataFrame({SAVE_IDX: save_idx, SNR_IN: float(
-                            snr_in[audio_idx]), SNR_OUT: float(snr_out[audio_idx])}, index=[0])
+                        dic = {SAVE_IDX: save_idx, SNR_IN: float(
+                            snr_in[audio_idx]), SNR_OUT: float(snr_out[audio_idx])}
+                        new_eval_row = pd.DataFrame(dic, index=[0])
                         evaluation_df = pd.concat([new_eval_row, evaluation_df.loc[:]], ignore_index=True)
 
                         # Save .wav
@@ -144,7 +146,7 @@ def launch_infer(exp: int, snr_filter: list = None, device: str = "cuda", model_
                             sample_rate=dl[TEST].dataset.sampling_rate,
                             channels_first=True
                         )
-
+                        Dump.save_json(dic, save_dir/f"{save_idx:04d}.json")
                         save_idx += 1
                     processed_batches += 1
                     if max_batches is not None and processed_batches >= max_batches:
