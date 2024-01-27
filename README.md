@@ -32,7 +32,7 @@ A few audio samples and pretrained models are provided.
 :gift: Please note that a few pretrained models are provided and a few test samples are provided aswell.
 
 *Run inference/evaluation from a checkpoint*
-`python scripts/audio_separation_infer.py -e 1`
+`python scripts/audio_separation_infer.py -e 3000`
 
 ### :gear: Batch processing
 Process specific audio files
