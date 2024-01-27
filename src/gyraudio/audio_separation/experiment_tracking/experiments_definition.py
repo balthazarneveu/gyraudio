@@ -282,6 +282,15 @@ def exp_3001_waveunet(config, model: bool = None, minor=None):
     config[OPTIMIZER][LEARNING_RATE] = 0.002
     return config, model
 
+@registered_experiment(major=3002)
+def exp_3002_waveunet(config, model: bool = None, minor=None):
+    config[EPOCHS] = 200
+    config, model = exp_wave_unet(config, model=model, num_layers=7, channels_extension=28, bias=False)
+    # 7 layers, ext +28 - Nvidia RTX3060 6Gb RAM - 16 batch size
+    config[SCHEDULER] = "ReduceLROnPlateau"
+    config[SCHEDULER_CONFIGURATION] = dict(patience=5, factor=0.8)
+    config[OPTIMIZER][LEARNING_RATE] = 0.002
+    return config, model
 
 @registered_experiment(major=4000)
 def exp_4000_bias_free_waveunet_l1(config, model: bool = None, minor=None):

@@ -19,7 +19,7 @@ class RemixedAudioDataset(AudioDataset):
             ] for folder in self.folder_list
         ]
         self.sampling_rate = None
-        self.min_snr, self.max_snr = -4, 4
+        self.min_snr, self.max_snr = -12, 12
         self.generate_snr_list()
         if self.debug:
             print("Not filtered", len(self.file_list), self.snr_filter)
