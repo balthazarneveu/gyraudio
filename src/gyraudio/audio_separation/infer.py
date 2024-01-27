@@ -125,13 +125,13 @@ def launch_infer(exp: int, snr_filter: list = None, device: str = "cuda", model_
 
                         # Save .wav
                         torchaudio.save(
-                            str(save_dir/f"{save_idx:04d}_mixed.wav"),
+                            str(save_dir/f"{save_idx:04d}_mixed.mp4"),
                             batch_mix[audio_idx, :, :],
                             sample_rate=dl[TEST].dataset.sampling_rate,
                             channels_first=True
                         )
                         torchaudio.save(
-                            str(save_dir/f"{save_idx:04d}_out.wav"),
+                            str(save_dir/f"{save_idx:04d}_out.mp4"),
                             batch_output_signal[audio_idx, :, :],
                             sample_rate=dl[TEST].dataset.sampling_rate,
                             channels_first=True

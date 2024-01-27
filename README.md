@@ -7,6 +7,7 @@ Context: Project [MVA - deep and signal](https://www.master-mva.com/cours/appren
 
 # [:scroll: REPORT](https://wandb.ai/teammd/audio-separation/reports/Audio-source-separation--Vmlldzo2NjA2OTg2)
 
+
 -------
 ### :rocket: Getting started
 
@@ -89,6 +90,13 @@ Each experiment is defined by:
 
 
 
+-------
+#### Demo samples
+
+
+https://github.com/balthazarneveu/gyraudio/assets/41070742/76803e54-c614-4a3c-9cae-5d967ecf87ad
+
+https://github.com/balthazarneveu/gyraudio/assets/41070742/a6b02e90-979d-4b06-a5b9-d8590c8c7692
 
 
 
@@ -119,3 +127,4 @@ pip install gpmf
 pip uninstall python-ffmpeg
 conda install -c conda-forge ffmpeg-python
 ```
+
