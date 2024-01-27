@@ -26,6 +26,7 @@ def neutral(config, model: bool = None, minor=None):
     config[ANNOTATIONS] = "Neutral"
     if model is None:
         model = NeutralModel()
+    config[NAME] = "Neutral"
     return config, model
 
 
