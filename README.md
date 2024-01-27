@@ -10,10 +10,24 @@ Context: Project [MVA - deep and signal](https://www.master-mva.com/cours/appren
 
 
 #### Demo samples
-|Clean | Mixed| Audio separation WaveU-Net bias free |
+<!-- |Clean | Mixed| Audio separation WaveU-Net bias free |
 |:---: | :---: | :----: |
 | . | -2.47db | 11.5db  |
-|https://github.com/balthazarneveu/gyraudio/assets/41070742/d0f01bc7-4868-4cad-a961-eb73748ccdfa   |  https://github.com/balthazarneveu/gyraudio/assets/41070742/76803e54-c614-4a3c-9cae-5d967ecf87ad | https://github.com/balthazarneveu/gyraudio/assets/41070742/a6b02e90-979d-4b06-a5b9-d8590c8c7692 | 
+|https://github.com/balthazarneveu/gyraudio/assets/41070742/d0f01bc7-4868-4cad-a961-eb73748ccdfa   |  https://github.com/balthazarneveu/gyraudio/assets/41070742/76803e54-c614-4a3c-9cae-5d967ecf87ad | https://github.com/balthazarneveu/gyraudio/assets/41070742/a6b02e90-979d-4b06-a5b9-d8590c8c7692 |  -->
+
+Clean
+
+https://github.com/balthazarneveu/gyraudio/assets/41070742/d0f01bc7-4868-4cad-a961-eb73748ccdfa
+
+
+Mixed (noisy) -2.47db
+
+https://github.com/balthazarneveu/gyraudio/assets/41070742/76803e54-c614-4a3c-9cae-5d967ecf87ad
+
+
+Audio separation WaveU-Net bias free : 11.5db
+
+https://github.com/balthazarneveu/gyraudio/assets/41070742/a6b02e90-979d-4b06-a5b9-d8590c8c7692
 
 
 -------
