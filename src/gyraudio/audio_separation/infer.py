@@ -158,7 +158,7 @@ def launch_infer(exp: int, snr_filter: list = None, device: str = "cuda", model_
 
 def main(argv):
     default_device = "cuda" if torch.cuda.is_available() else "cpu"
-    parser_def = shared_parser(help="Launch training \nCheck results at: https://wandb.ai/balthazarneveu/audio-sep"
+    parser_def = shared_parser(help="Launch inference on a specific model"
                                + ("\n<<<Cuda available>>>" if default_device == "cuda" else ""))
     parser_def.add_argument("-i", "--input-dir", type=str, default=EXPERIMENT_STORAGE_ROOT)
     parser_def.add_argument("-o", "--output-dir", type=str, default=EXPERIMENT_STORAGE_ROOT)
