@@ -2,12 +2,13 @@ from gyraudio.audio_separation.experiment_tracking.experiments import get_experi
 from gyraudio.audio_separation.parser import shared_parser
 from gyraudio.audio_separation.properties import (
     TRAIN, TEST, EPOCHS, OPTIMIZER, NAME, MAX_STEPS_PER_EPOCH,
-    SIGNAL, NOISE, TOTAL, SNR, SCHEDULER, SCHEDULER_CONFIGURATION
+    SIGNAL, NOISE, TOTAL, SNR, SCHEDULER, SCHEDULER_CONFIGURATION,
+    LOSS, LOSS_L2, LOSS_L1, LOSS_TYPE, COEFFICIENT
 )
 from gyraudio.default_locations import EXPERIMENT_STORAGE_ROOT
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from gyraudio.audio_separation.experiment_tracking.storage import get_output_folder, save_checkpoint
-from gyraudio.audio_separation.metrics import Costs
+from gyraudio.audio_separation.metrics import Costs, snr
 # from gyraudio.audio_separation.experiment_tracking.storage import load_checkpoint
 from pathlib import Path
 from gyraudio.io.dump import Dump
@@ -73,7 +74,27 @@ def training_loop(model: torch.nn.Module, config: dict, dl, device: str = "cuda"
         else:
             raise NotImplementedError(f"Scheduler {scheduler_name} not implemented")
     max_steps = config.get(MAX_STEPS_PER_EPOCH, None)
-    costs = {TRAIN:  Costs(TRAIN), TEST: Costs(TEST)}
+    chosen_loss = config.get(LOSS, LOSS_L2)
+    if chosen_loss == LOSS_L2:
+        costs = {TRAIN:  Costs(TRAIN), TEST: Costs(TEST)}
+    elif chosen_loss == LOSS_L1:
+        cost_init = {
+            SIGNAL: {
+                COEFFICIENT: 0.5,
+                LOSS_TYPE: torch.nn.functional.l1_loss
+            },
+            NOISE: {
+                COEFFICIENT: 0.5,
+                LOSS_TYPE: torch.nn.functional.l1_loss
+            },
+            SNR: {
+                LOSS_TYPE: snr
+            }
+        }
+        costs = {
+            TRAIN:  Costs(TRAIN, costs=cost_init),
+            TEST: Costs(TEST)
+        }
     for epoch in range(config[EPOCHS]):
         costs[TRAIN].reset_epoch()
         costs[TEST].reset_epoch()

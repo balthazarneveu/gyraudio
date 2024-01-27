@@ -55,6 +55,7 @@ SCHEDULER_CONFIGURATION = "scheduler_configuration"
 
 # Loss
 LOSS = "loss"
+LOSS_L1 = "L1"
 LOSS_L2 = "MSE"
 LOSS_TYPE = "loss_type"
 SNR = "snr"
