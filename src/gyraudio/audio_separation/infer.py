@@ -36,7 +36,9 @@ def load_file(path: Path, keys: List[str]) -> pd.DataFrame:
     return pd.read_csv(path)
 
 
-def launch_infer(exp: int, snr_filter: list = None, device: str = "cuda", model_dir: Path = None, output_dir: Path = EXPERIMENT_STORAGE_ROOT, force_reload=False, max_batches=None):
+def launch_infer(exp: int, snr_filter: list = None, device: str = "cuda", model_dir: Path = None,
+                 output_dir: Path = EXPERIMENT_STORAGE_ROOT, force_reload=False, max_batches=None,
+                 ext=".wav"):
     # Load experience
     if snr_filter is not None:
         snr_filter = sorted(snr_filter)
@@ -125,14 +127,20 @@ def launch_infer(exp: int, snr_filter: list = None, device: str = "cuda", model_
 
                         # Save .wav
                         torchaudio.save(
-                            str(save_dir/f"{save_idx:04d}_mixed.mp4"),
+                            str(save_dir/f"{save_idx:04d}_mixed{ext}"),
                             batch_mix[audio_idx, :, :],
                             sample_rate=dl[TEST].dataset.sampling_rate,
                             channels_first=True
                         )
                         torchaudio.save(
-                            str(save_dir/f"{save_idx:04d}_out.mp4"),
+                            str(save_dir/f"{save_idx:04d}_out{ext}"),
                             batch_output_signal[audio_idx, :, :],
+                            sample_rate=dl[TEST].dataset.sampling_rate,
+                            channels_first=True
+                        )
+                        torchaudio.save(
+                            str(save_dir/f"{save_idx:04d}_original{ext}"),
+                            batch_signal[audio_idx, :, :],
                             sample_rate=dl[TEST].dataset.sampling_rate,
                             channels_first=True
                         )
@@ -170,6 +178,8 @@ def main(argv):
                             help="Number of batches to process")
     parser_def.add_argument("-s",  "--snr-filter", type=float, nargs="+", default=None,
                             help="SNR filters on the inference dataloader")
+    parser_def.add_argument("-ext", "--extension", type=str, default=".wav", help="Extension of the audio files to save",
+                            choices=[".wav", ".mp4"])
     args = parser_def.parse_args(argv)
     for exp in args.experiments:
         launch_infer(
@@ -179,7 +189,8 @@ def main(argv):
             device=args.device,
             force_reload=args.reload,
             max_batches=args.nb_batch,
-            snr_filter=args.snr_filter
+            snr_filter=args.snr_filter,
+            ext=args.extension
         )
 
 

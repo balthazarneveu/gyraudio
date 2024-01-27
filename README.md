@@ -8,6 +8,14 @@ Context: Project [MVA - deep and signal](https://www.master-mva.com/cours/appren
 # [:scroll: REPORT](https://wandb.ai/teammd/audio-separation/reports/Audio-source-separation--Vmlldzo2NjA2OTg2)
 
 
+
+#### Demo samples
+|Clean | Mixed| Audio separation WaveU-Net bias free |
+|:---: | :---: | :----: |
+| . | -2.47db | 11.5db  |
+|https://github.com/balthazarneveu/gyraudio/assets/41070742/d0f01bc7-4868-4cad-a961-eb73748ccdfa   |  https://github.com/balthazarneveu/gyraudio/assets/41070742/76803e54-c614-4a3c-9cae-5d967ecf87ad | https://github.com/balthazarneveu/gyraudio/assets/41070742/a6b02e90-979d-4b06-a5b9-d8590c8c7692 | 
+
+
 -------
 ### :rocket: Getting started
 
@@ -89,14 +97,6 @@ Each experiment is defined by:
 [Code to define new experiments](/src/gyraudio/audio_separation/experiment_tracking/experiments_definition.py)
 
 
-
--------
-#### Demo samples
-
-
-https://github.com/balthazarneveu/gyraudio/assets/41070742/76803e54-c614-4a3c-9cae-5d967ecf87ad
-
-https://github.com/balthazarneveu/gyraudio/assets/41070742/a6b02e90-979d-4b06-a5b9-d8590c8c7692
 
 
 
