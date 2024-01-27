@@ -15,19 +15,27 @@ Context: Project [MVA - deep and signal](https://www.master-mva.com/cours/appren
 | . | -2.47db | 11.5db  |
 |https://github.com/balthazarneveu/gyraudio/assets/41070742/d0f01bc7-4868-4cad-a961-eb73748ccdfa   |  https://github.com/balthazarneveu/gyraudio/assets/41070742/76803e54-c614-4a3c-9cae-5d967ecf87ad | https://github.com/balthazarneveu/gyraudio/assets/41070742/a6b02e90-979d-4b06-a5b9-d8590c8c7692 |  -->
 
-Clean
+:green_circle: Clean
 
 https://github.com/balthazarneveu/gyraudio/assets/41070742/d0f01bc7-4868-4cad-a961-eb73748ccdfa
 
 
-Mixed (noisy) -2.47db
+:red_circle: Mixed (noisy) -2.47db
 
 https://github.com/balthazarneveu/gyraudio/assets/41070742/76803e54-c614-4a3c-9cae-5d967ecf87ad
 
 
-Audio separation WaveU-Net bias free : 11.5db
+:-1: Audio separation : Thin WaveUNet  - 7 scales `h_ext=16` (1M parameters): (*11.5db*)
+
+*"Garçon" word disappear*
+
+https://github.com/balthazarneveu/gyraudio/assets/41070742/c8940622-d0fc-4e2c-9409-2d0e4b8285c6
+
+
+:trophy: Audio separation : Bigger WaveUNet bias free, 7 scales, `h_ext=28` 3.1M parameters (*11.5db*)
 
 https://github.com/balthazarneveu/gyraudio/assets/41070742/a6b02e90-979d-4b06-a5b9-d8590c8c7692
+
 
 
 -------
